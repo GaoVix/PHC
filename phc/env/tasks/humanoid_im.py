@@ -32,6 +32,7 @@ from tqdm import tqdm
 import copy
 
 MODIFY = False
+DISABLE_RESET = True
 
 
 class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
@@ -1275,6 +1276,8 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         return
 
     def _compute_reset(self):
+        if DISABLE_RESET:
+            return
         time = (self.progress_buf) * self.dt + self._motion_start_times + self._motion_start_times_offset # Reset is also called after the progress_buf is updated. 
 
         pass_time_max = self.progress_buf >= self.max_episode_length - 1
