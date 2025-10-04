@@ -68,6 +68,8 @@ HACK_CONSISTENCY_TEST = False
 HACK_OUTPUT_MOTION = False
 HACK_OUTPUT_MOTION_ALL = False
 
+MODIFY = True
+
 
 class HumanoidAMP(Humanoid):
 
@@ -109,7 +111,8 @@ class HumanoidAMP(Humanoid):
         self._motion_start_times = torch.zeros(self.num_envs).to(self.device)
         self._sampled_motion_ids = torch.zeros(self.num_envs).long().to(self.device)
         motion_file = cfg['env']['motion_file']
-        self._load_motion(motion_file)
+        if not MODIFY:
+            self._load_motion(motion_file)
 
         self._amp_obs_buf = torch.zeros((self.num_envs, self._num_amp_obs_steps, self._num_amp_obs_per_step), device=self.device, dtype=torch.float)
         self._curr_amp_obs_buf = self._amp_obs_buf[:, 0]
@@ -478,30 +481,47 @@ class HumanoidAMP(Humanoid):
     def _sample_ref_state(self, env_ids):
         
         num_envs = env_ids.shape[0]
-        motion_ids = self._motion_lib.sample_motions(num_envs)
 
-        if (self._state_init == HumanoidAMP.StateInit.Random or self._state_init == HumanoidAMP.StateInit.Hybrid):
-            motion_times = self._sample_time(motion_ids)
-        elif (self._state_init == HumanoidAMP.StateInit.Start):
-            motion_times = torch.zeros(num_envs, device=self.device)
-        else:
-            assert (False), "Unsupported state initialization strategy: {:s}".format(str(self._state_init))
+        if not MODIFY:
+            motion_ids = self._motion_lib.sample_motions(num_envs)
 
-        if self.humanoid_type in ["smpl", "smplh", "smplx"]:
-            curr_gender_betas = self.humanoid_shapes[env_ids]
-            root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, rb_pos, rb_rot, body_vel, body_ang_vel = self._get_fixed_smpl_state_from_motionlib(motion_ids, motion_times, curr_gender_betas)
-        elif self.humanoid_type in ['h1', 'g1']:
-            curr_gender_betas = self.humanoid_shapes[env_ids]
-            
-            motion_res = self._get_state_from_motionlib_cache(motion_ids, motion_times)
-            
-            root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, smpl_params, limb_weights, pose_aa, rb_pos, rb_rot, body_vel, body_ang_vel = \
-                motion_res["root_pos"], motion_res["root_rot"], motion_res["dof_pos"], motion_res["root_vel"], motion_res["root_ang_vel"], motion_res["dof_vel"], \
-                 motion_res["motion_bodies"], motion_res["motion_limb_weights"], motion_res["motion_aa"], motion_res["rg_pos"], motion_res["rb_rot"], motion_res["body_vel"], motion_res["body_ang_vel"]
-                 
+            if (self._state_init == HumanoidAMP.StateInit.Random or self._state_init == HumanoidAMP.StateInit.Hybrid):
+                motion_times = self._sample_time(motion_ids)
+            elif (self._state_init == HumanoidAMP.StateInit.Start):
+                motion_times = torch.zeros(num_envs, device=self.device)
+            else:
+                assert (False), "Unsupported state initialization strategy: {:s}".format(str(self._state_init))
+
+            if self.humanoid_type in ["smpl", "smplh", "smplx"]:
+                curr_gender_betas = self.humanoid_shapes[env_ids]
+                root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, rb_pos, rb_rot, body_vel, body_ang_vel = self._get_fixed_smpl_state_from_motionlib(motion_ids, motion_times, curr_gender_betas)
+            elif self.humanoid_type in ['h1', 'g1']:
+                curr_gender_betas = self.humanoid_shapes[env_ids]
+                
+                motion_res = self._get_state_from_motionlib_cache(motion_ids, motion_times)
+                
+                root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, smpl_params, limb_weights, pose_aa, rb_pos, rb_rot, body_vel, body_ang_vel = \
+                    motion_res["root_pos"], motion_res["root_rot"], motion_res["dof_pos"], motion_res["root_vel"], motion_res["root_ang_vel"], motion_res["dof_vel"], \
+                     motion_res["motion_bodies"], motion_res["motion_limb_weights"], motion_res["motion_aa"], motion_res["rg_pos"], motion_res["rb_rot"], motion_res["body_vel"], motion_res["body_ang_vel"]
+                    
+            else:
+                root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, key_pos = self._motion_lib.get_motion_state_amp(motion_ids, motion_times)
+                rb_pos, rb_rot = None, None
         else:
-            root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, key_pos = self._motion_lib.get_motion_state_amp(motion_ids, motion_times)
-            rb_pos, rb_rot = None, None
+            init_state = self.init_state.copy()
+
+            root_pos = torch.from_numpy(init_state["root_pos"][env_ids]).to(self.device)
+            root_rot = torch.from_numpy(init_state["root_rot"][env_ids]).to(self.device)
+            dof_pos = torch.from_numpy(init_state["dof_pos"][env_ids]).to(self.device)
+            root_vel = torch.from_numpy(init_state["root_vel"][env_ids]).to(self.device)
+            root_ang_vel = torch.from_numpy(init_state["root_ang_vel"][env_ids]).to(self.device)
+            dof_vel = torch.from_numpy(init_state["dof_vel"][env_ids]).to(self.device)
+            rb_pos = torch.from_numpy(init_state["ref_rb_pos"][env_ids]).to(self.device)
+            rb_rot = torch.from_numpy(init_state["ref_rb_rot"][env_ids]).to(self.device)
+            body_vel = torch.from_numpy(init_state["ref_body_vel"][env_ids]).to(self.device)
+            body_ang_vel = torch.from_numpy(init_state["ref_body_ang_vel"][env_ids]).to(self.device)
+            motion_ids = torch.zeros(num_envs, dtype=torch.float, device=self.device)
+            motion_times = motion_ids.clone()
 
         return motion_ids, motion_times, root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel,  rb_pos, rb_rot, body_vel, body_ang_vel
 
@@ -573,6 +593,8 @@ class HumanoidAMP(Humanoid):
         return
 
     def _init_amp_obs_ref(self, env_ids, motion_ids, motion_times):
+        if MODIFY:
+            return
         dt = self.dt
         motion_ids = torch.tile(motion_ids.unsqueeze(-1), [1, self._num_amp_obs_steps - 1])
         motion_times = motion_times.unsqueeze(-1)

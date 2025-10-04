@@ -1536,7 +1536,11 @@ class Humanoid(BaseTask):
 
         if len(self.actions.shape) == 1:
             self.actions = self.actions[None, ]
-            
+        # print('--------------------------------')
+        # print(self._pd_control) # False
+        # print(self.control_mode) # PD
+        # print('--------------------------------')
+        # raise RuntimeError
         if (self._pd_control):
             if self.humanoid_type in ["smpl", "smplh", "smplx"]:
                 if self.reduce_action:
@@ -1583,11 +1587,15 @@ class Humanoid(BaseTask):
         """
         #pd controller
         control_type = "P" # self.cfg.control.control_type
+        # actually this is 1
         actions_scaled = actions * self.cfg.control.action_scale # 0.5
         # print(actions)
         if control_type=="P": # default 
             
             torques = self.p_gains*(actions_scaled + self.default_dof_pos - self._dof_pos) - self.d_gains*self._dof_vel
+            # print('------------------------------------')
+            # print(torch.sum(self.default_dof_pos))
+            # print('------------------------------------')
         elif control_type=="V":
             torques = self.p_gains*(actions_scaled - self.dof_vel) - self.d_gains*(self.dof_vel - self.last_dof_vel)/self.sim_params.dt
         elif control_type=="T":
@@ -1606,9 +1614,13 @@ class Humanoid(BaseTask):
             
             if not self.paused and self.enable_viewer_sync:
                 if self.control_mode in ["pd"]:
-                    
                     self.torques = self._compute_torques(self.actions)
-                    
+                    # self.b_torque.append(np.array(self.torques.cpu()))
+                    # print(self.control_freq_inv)
+                    # if len(self.b_torque) == 400:
+                    #     d = np.array(self.b_torque)
+                    #     np.save("/mnt/Exp_HDD/dataset/test/torques.npy", d)
+
                     self.gym.set_dof_actuation_force_tensor(self.sim, gymtorch.unwrap_tensor(self.torques))
                     self.gym.simulate(self.sim)
                     if self.device == 'cpu':

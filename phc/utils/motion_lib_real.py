@@ -75,13 +75,13 @@ class MotionLibReal(MotionLibBase):
         
     def load_motions(self, skeleton_trees, gender_betas, limb_weights, random_sample=True, start_idx=0, max_len=-1, target_heading = None):
         # load motion load the same number of motions as there are skeletons (humanoids)
-        # if "gts" in self.__dict__:
-        #     del self.gts, self.grs, self.lrs, self.grvs, self.gravs, self.gavs, self.gvs, self.dvs
-        #     del self._motion_lengths, self._motion_fps, self._motion_dt, self._motion_num_frames, self._motion_bodies, self._motion_aa
-        #     if "gts_t" in self.__dict__:
-        #         self.gts_t, self.grs_t, self.gvs_t
-        #     if flags.real_traj:
-        #         del self.q_gts, self.q_grs, self.q_gavs, self.q_gvs
+        if "gts" in self.__dict__:
+            del self.gts, self.grs, self.lrs, self.grvs, self.gravs, self.gavs, self.gvs, self.dvs
+            del self._motion_lengths, self._motion_fps, self._motion_dt, self._motion_num_frames, self._motion_bodies, self._motion_aa
+            if "gts_t" in self.__dict__:
+                self.gts_t, self.grs_t, self.gvs_t
+            if flags.real_traj:
+                del self.q_gts, self.q_grs, self.q_gavs, self.q_gvs
 
         motions = []
         _motion_lengths = []

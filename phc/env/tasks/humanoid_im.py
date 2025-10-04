@@ -31,6 +31,8 @@ from collections import deque
 from tqdm import tqdm
 import copy
 
+MODIFY = True
+
 
 class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
 
@@ -120,6 +122,11 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         self.vis_contact = False
         self._sampled_motion_ids = torch.arange(self.num_envs).to(self.device)
         self.create_o3d_viewer()
+        self.save_flag=True
+        self.motion_res_history = []
+        self.play_index = 0
+        self.data_coll = np.load("/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz", allow_pickle=True)
+        self.init_state = np.load("/mnt/Exp_HDD/dataset/test/init_motion_res_data.npz", allow_pickle=True)
         return
     
     
@@ -392,6 +399,12 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
             time = self.progress_buf * self.dt + self._motion_start_times + self._motion_start_times_offset
             root_res = self._motion_lib.get_root_pos_smpl(self._sampled_motion_ids, time)
             self._global_offset[:, :2] = self._humanoid_root_states[:, :2] - root_res['root_pos'][:, :2]
+            # print('---------------------------------------------')
+            # # global_offset_np = self._global_offset.cpu().numpy()
+            # print(self._global_offset)
+            # # np.savez("/mnt/Exp_HDD/dataset/test/global_offset_data.npz", global_offset=global_offset_np)
+            # # print("Global offset saved as global_offset_data.npz")
+            # print('---------------------------------------------')
             self.reset()
 
 
@@ -660,7 +673,8 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
 
     def _sample_time(self, motion_ids):
         # Motion imitation, no more blending and only sample at certain locations
-        return self._motion_lib.sample_time_interval(motion_ids)
+        if not MODIFY:
+            return self._motion_lib.sample_time_interval(motion_ids)
         # return self._motion_lib.sample_time(motion_ids)
 
     def _reset_task(self, env_ids):
@@ -698,11 +712,20 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
             env_ids = torch.arange(self.num_envs).to(self.device)
 
         self_obs = self._compute_humanoid_obs(env_ids)
+
+        # print('----------------------------------------')
+        # print('self_obs.shape')
+        # print(self_obs.shape)
+        # print('----------------------------------------')
         
         self.self_obs_buf[env_ids] = self_obs
 
         if (self._enable_task_obs):
             task_obs = self._compute_task_obs(env_ids)
+            # print('----------------------------------------')
+            # print('task_obs.shape')
+            # print(task_obs.shape)
+            # print('----------------------------------------')
             obs = torch.cat([self_obs, task_obs], dim=-1)
         else:
             obs = self_obs
@@ -725,37 +748,97 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         
         return obs
 
+    # def save_all_motion_res_to_npz(self):
+    #     combined_motion_res = {
+    #         "root_pos": np.array([motion["root_pos"] for motion in self.motion_res_history]),
+    #         "root_rot": np.array([motion["root_rot"] for motion in self.motion_res_history]),
+    #         "dof_pos": np.array([motion["dof_pos"] for motion in self.motion_res_history]),
+    #         "root_vel": np.array([motion["root_vel"] for motion in self.motion_res_history]),
+    #         "root_ang_vel": np.array([motion["root_ang_vel"] for motion in self.motion_res_history]),
+    #         "dof_vel": np.array([motion["dof_vel"] for motion in self.motion_res_history]),
+    #         "smpl_params": np.array([motion["motion_bodies"] for motion in self.motion_res_history]),
+    #         "limb_weights": np.array([motion["motion_limb_weights"] for motion in self.motion_res_history]),
+    #         "pose_aa": np.array([motion["motion_aa"] for motion in self.motion_res_history]),
+    #         "ref_rb_pos": np.array([motion["rg_pos"] for motion in self.motion_res_history]),
+    #         "ref_rb_rot": np.array([motion["rb_rot"] for motion in self.motion_res_history]),
+    #         "ref_body_vel": np.array([motion["body_vel"] for motion in self.motion_res_history]),
+    #         "ref_body_ang_vel": np.array([motion["body_ang_vel"] for motion in self.motion_res_history]),
+    #     }
+        
+    #     filename = f"/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz"
+    #     np.savez(filename, **combined_motion_res)
+    #     print(f"All motion_res saved as {filename}")
+
     def _compute_task_obs(self, env_ids=None, save_buffer = True):
-        if (env_ids is None):
+        if not MODIFY:
+            if (env_ids is None):
+                body_pos = self._rigid_body_pos
+                body_rot = self._rigid_body_rot
+                body_vel = self._rigid_body_vel
+                body_ang_vel = self._rigid_body_ang_vel
+                env_ids = torch.arange(self.num_envs, dtype=torch.long, device=self.device)
+            else:
+                body_pos = self._rigid_body_pos[env_ids]
+                body_rot = self._rigid_body_rot[env_ids]
+                body_vel = self._rigid_body_vel[env_ids]
+                body_ang_vel = self._rigid_body_ang_vel[env_ids]
+
+            curr_gender_betas = self.humanoid_shapes[env_ids]
+            
+            if self._fut_tracks:
+                time_steps = self._num_traj_samples
+                B = env_ids.shape[0]
+                time_internals = torch.arange(time_steps).to(self.device).repeat(B).view(-1, time_steps) * self._traj_sample_timestep
+                motion_times_steps = ((self.progress_buf[env_ids, None] + 1) * self.dt + time_internals + self._motion_start_times[env_ids, None] + self._motion_start_times_offset[env_ids, None]).flatten()  # Next frame, so +1
+                env_ids_steps = self._sampled_motion_ids[env_ids].repeat_interleave(time_steps)
+                motion_res = self._get_state_from_motionlib_cache(env_ids_steps, motion_times_steps, self._global_offset[env_ids].repeat_interleave(time_steps, dim=0).view(-1, 3))  # pass in the env_ids such that the motion is in synced.
+
+            else:
+                motion_times = (self.progress_buf[env_ids] + 1) * self.dt + self._motion_start_times[env_ids] + self._motion_start_times_offset[env_ids]  # Next frame, so +1
+                time_steps = 1
+                motion_res = self._get_state_from_motionlib_cache(self._sampled_motion_ids[env_ids], motion_times, self._global_offset[env_ids])  # pass in the env_ids such that the motion is in synced.
+        
+            ref_root_pos, ref_root_rot, ref_dof_pos, ref_root_vel, ref_root_ang_vel, ref_dof_vel, ref_smpl_params, ref_limb_weights, ref_pose_aa, ref_rb_pos, ref_rb_rot, ref_body_vel, ref_body_ang_vel = \
+                motion_res["root_pos"], motion_res["root_rot"], motion_res["dof_pos"], motion_res["root_vel"], motion_res["root_ang_vel"], motion_res["dof_vel"], \
+                motion_res["motion_bodies"], motion_res["motion_limb_weights"], motion_res["motion_aa"], motion_res["rg_pos"], motion_res["rb_rot"], motion_res["body_vel"], motion_res["body_ang_vel"]
+        
+        else:
             body_pos = self._rigid_body_pos
             body_rot = self._rigid_body_rot
             body_vel = self._rigid_body_vel
             body_ang_vel = self._rigid_body_ang_vel
-            env_ids = torch.arange(self.num_envs, dtype=torch.long, device=self.device)
-        else:
-            body_pos = self._rigid_body_pos[env_ids]
-            body_rot = self._rigid_body_rot[env_ids]
-            body_vel = self._rigid_body_vel[env_ids]
-            body_ang_vel = self._rigid_body_ang_vel[env_ids]
-
-        curr_gender_betas = self.humanoid_shapes[env_ids]
-        
-        if self._fut_tracks:
-            time_steps = self._num_traj_samples
-            B = env_ids.shape[0]
-            time_internals = torch.arange(time_steps).to(self.device).repeat(B).view(-1, time_steps) * self._traj_sample_timestep
-            motion_times_steps = ((self.progress_buf[env_ids, None] + 1) * self.dt + time_internals + self._motion_start_times[env_ids, None] + self._motion_start_times_offset[env_ids, None]).flatten()  # Next frame, so +1
-            env_ids_steps = self._sampled_motion_ids[env_ids].repeat_interleave(time_steps)
-            motion_res = self._get_state_from_motionlib_cache(env_ids_steps, motion_times_steps, self._global_offset[env_ids].repeat_interleave(time_steps, dim=0).view(-1, 3))  # pass in the env_ids such that the motion is in synced.
-
-        else:
-            motion_times = (self.progress_buf[env_ids] + 1) * self.dt + self._motion_start_times[env_ids] + self._motion_start_times_offset[env_ids]  # Next frame, so +1
+            # env_ids = torch.arange(self.num_envs, dtype=torch.long, device=self.device)
+            # motion_res = self.data_coll[self.play_index]
             time_steps = 1
-            motion_res = self._get_state_from_motionlib_cache(self._sampled_motion_ids[env_ids], motion_times, self._global_offset[env_ids])  # pass in the env_ids such that the motion is in synced.
 
-        ref_root_pos, ref_root_rot, ref_dof_pos, ref_root_vel, ref_root_ang_vel, ref_dof_vel, ref_smpl_params, ref_limb_weights, ref_pose_aa, ref_rb_pos, ref_rb_rot, ref_body_vel, ref_body_ang_vel = \
-                motion_res["root_pos"], motion_res["root_rot"], motion_res["dof_pos"], motion_res["root_vel"], motion_res["root_ang_vel"], motion_res["dof_vel"], \
-                motion_res["motion_bodies"], motion_res["motion_limb_weights"], motion_res["motion_aa"], motion_res["rg_pos"], motion_res["rb_rot"], motion_res["body_vel"], motion_res["body_ang_vel"]
+            ref_dof_pos = self.data_coll["dof_pos"][self.play_index]
+            ref_rb_pos = self.data_coll["ref_rb_pos"][self.play_index]
+            ref_rb_rot = self.data_coll["ref_rb_rot"][self.play_index]
+            ref_body_vel = self.data_coll["ref_body_vel"][self.play_index]
+            ref_body_ang_vel = self.data_coll["ref_body_ang_vel"][self.play_index]
+            self.play_index += 1
+
+            if (env_ids is not None):
+                body_pos = self._rigid_body_pos[env_ids]
+                body_rot = self._rigid_body_rot[env_ids]
+                body_vel = self._rigid_body_vel[env_ids]
+                body_ang_vel = self._rigid_body_ang_vel[env_ids]
+                ref_dof_pos = ref_dof_pos[env_ids]
+                ref_rb_pos = ref_rb_pos[env_ids]
+                ref_rb_rot = ref_rb_rot[env_ids]
+                ref_body_vel = ref_body_vel[env_ids]
+                ref_body_ang_vel = ref_body_ang_vel[env_ids]
+            # print(self._global_offset[env_ids])
+            # self.motion_res_history.append(motion_res)
+            # if len(self.motion_res_history) == 200:
+            #     self.save_all_motion_res_to_npz()
+            #     raise RuntimeError("Finished")
+            # print('---------------------------')
+            # print(f'current the {len(self.motion_res_history)} motion res recorded, there are {len(self.buffer)} info in buffer.')
+            # print('-------------------------')
+
+
+        
         root_pos = body_pos[..., 0, :]
         root_rot = body_rot[..., 0, :]
 
@@ -871,6 +954,8 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         return obs
 
     def _compute_reward(self, actions):
+        if MODIFY:
+            return
         body_pos = self._rigid_body_pos
         body_rot = self._rigid_body_rot
         body_vel = self._rigid_body_vel
@@ -982,6 +1067,26 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         return
 
     def _get_state_from_motionlib_cache(self, motion_ids, motion_times, offset=None):
+        if MODIFY:
+            motion_ids, motion_times, root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel,  rb_pos, rb_rot, body_vel, body_ang_vel = self._sample_ref_state(torch.from_numpy(np.arange(self.num_envs)).to(self.device))
+            res = {
+                "root_pos": root_pos,
+                "root_rot": root_rot,
+                "dof_pos": dof_pos,
+                "root_vel": root_vel,
+                "root_ang_vel":root_ang_vel,
+                "dof_vel": dof_vel,
+                "motion_bodies": torch.zeros(1024),
+                "motion_limb_weights": torch.zeros(1024),
+                "motion_aa": torch.zeros(1024),
+                "rg_pos": rb_pos,
+                "rb_rot": rb_rot,
+                "body_vel": body_vel,
+                "body_ang_vel": body_ang_vel,
+                "rg_pos_t": rb_pos,
+                "rg_rot_t": rb_rot,
+            }
+            return res
         ## Cache the motion + offset
         if offset is None  or not "motion_ids" in self.ref_motion_cache or self.ref_motion_cache['offset'] is None or len(self.ref_motion_cache['motion_ids']) != len(motion_ids) or len(self.ref_motion_cache['offset']) != len(offset) \
             or  (self.ref_motion_cache['motion_ids'] - motion_ids).abs().sum() + (self.ref_motion_cache['motion_times'] - motion_times).abs().sum() + (self.ref_motion_cache['offset'] - offset).abs().sum() > 0 :
@@ -999,23 +1104,82 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
 
     def _sample_ref_state(self, env_ids):
         num_envs = env_ids.shape[0]
+        if not MODIFY:
+            if (self._state_init == HumanoidAMP.StateInit.Random or self._state_init == HumanoidAMP.StateInit.Hybrid):
+                motion_times = self._sample_time(self._sampled_motion_ids[env_ids])
+            elif (self._state_init == HumanoidAMP.StateInit.Start):
+                motion_times = torch.zeros(num_envs, device=self.device)
+            else:
+                assert (False), "Unsupported state initialization strategy: {:s}".format(str(self._state_init))
 
-        if (self._state_init == HumanoidAMP.StateInit.Random or self._state_init == HumanoidAMP.StateInit.Hybrid):
-            motion_times = self._sample_time(self._sampled_motion_ids[env_ids])
-        elif (self._state_init == HumanoidAMP.StateInit.Start):
-            motion_times = torch.zeros(num_envs, device=self.device)
-        else:
-            assert (False), "Unsupported state initialization strategy: {:s}".format(str(self._state_init))
-
-        if flags.test:
-            motion_times[:] = 0
-        
+            if flags.test:
+                motion_times[:] = 0
+        # motion_times = torch.zeros(num_envs, device=self.device)
+        # print("sampling motions from scrath!!!!!!!!!!!!!")
         if self.humanoid_type in ['h1', 'g1',"smpl", "smplh", "smplx"] :
+            # print(111111111111111)
+            # print(self._global_offset)
+            # print(111111111111111)
+            if MODIFY:
+                init_state = self.init_state
+
+                root_pos = torch.from_numpy(init_state["root_pos"][env_ids]).to(self.device)
+                root_rot = torch.from_numpy(init_state["root_rot"][env_ids]).to(self.device)
+                dof_pos = torch.from_numpy(init_state["dof_pos"][env_ids]).to(self.device)
+                root_vel = torch.from_numpy(init_state["root_vel"][env_ids]).to(self.device)
+                root_ang_vel = torch.from_numpy(init_state["root_ang_vel"][env_ids]).to(self.device)
+                dof_vel = torch.from_numpy(init_state["dof_vel"][env_ids]).to(self.device)
+                rb_pos = torch.from_numpy(init_state["ref_rb_pos"][env_ids]).to(self.device)
+                rb_rot = torch.from_numpy(init_state["ref_rb_rot"][env_ids]).to(self.device)
+                body_vel = torch.from_numpy(init_state["ref_body_vel"][env_ids]).to(self.device)
+                body_ang_vel = torch.from_numpy(init_state["ref_body_ang_vel"][env_ids]).to(self.device)
+                motion_ids = torch.zeros(num_envs, dtype=torch.long, device=self.device)
+                motion_times = torch.zeros(num_envs, dtype=torch.float, device=self.device)
+
+                return motion_ids, motion_times, root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel,  rb_pos, rb_rot, body_vel, body_ang_vel
             motion_res = self._get_state_from_motionlib_cache(self._sampled_motion_ids[env_ids], motion_times, self._global_offset[env_ids])
             root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, smpl_params, limb_weights, pose_aa, ref_rb_pos, ref_rb_rot, ref_body_vel, ref_body_ang_vel = \
                 motion_res["root_pos"], motion_res["root_rot"], motion_res["dof_pos"], motion_res["root_vel"], motion_res["root_ang_vel"], motion_res["dof_vel"], \
                 motion_res["motion_bodies"], motion_res["motion_limb_weights"], motion_res["motion_aa"], motion_res["rg_pos"], motion_res["rb_rot"], motion_res["body_vel"], motion_res["body_ang_vel"]
+            # if self.save_flag:
 
+            #     motion_res_np = {
+            #         "root_pos": motion_res["root_pos"].cpu().numpy(),
+            #         "root_rot": motion_res["root_rot"].cpu().numpy(),
+            #         "dof_pos": motion_res["dof_pos"].cpu().numpy(),
+            #         "root_vel": motion_res["root_vel"].cpu().numpy(),
+            #         "root_ang_vel": motion_res["root_ang_vel"].cpu().numpy(),
+            #         "dof_vel": motion_res["dof_vel"].cpu().numpy(),
+            #         "smpl_params": motion_res["motion_bodies"].cpu().numpy(),
+            #         "limb_weights": motion_res["motion_limb_weights"].cpu().numpy(),
+            #         "pose_aa": motion_res["motion_aa"].cpu().numpy(),
+            #         "ref_rb_pos": motion_res["rg_pos"].cpu().numpy(),
+            #         "ref_rb_rot": motion_res["rb_rot"].cpu().numpy(),
+            #         "ref_body_vel": motion_res["body_vel"].cpu().numpy(),
+            #         "ref_body_ang_vel": motion_res["body_ang_vel"].cpu().numpy()
+            #     }
+            #     print('-------------------------------------------------------------------------')
+            #     print("reset envs")
+            #     print(num_envs)
+            #     np.savez("/mnt/Exp_HDD/dataset/test/init_motion_res_data2.npz", **motion_res_np)
+            #     self.save_flag=False
+            #     print("offset")
+            #     print(torch.sum(self._global_offset[env_ids]))
+            #     print("times")
+            #     print(motion_times)
+            #     print("Init state motion_res saved as motion_res_data.npz")
+            #     print('-------------------------------------------------------------------------')
+            #     # raise RuntimeError
+            # else:
+            #     print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            #     print("New Ref State Sampled!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            #     print("reset num")
+            #     print(num_envs)
+            #     print("reset time")
+            #     print(torch.sum(motion_times))
+            #     print("offset")
+            #     print(torch.sum(self._global_offset[env_ids]))
+            #     print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         else:
             root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, key_pos = self._motion_lib.get_motion_state(self._sampled_motion_ids[env_ids], motion_times)
             rb_pos, rb_rot = None, None
@@ -1118,7 +1282,10 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         time = (self.progress_buf) * self.dt + self._motion_start_times + self._motion_start_times_offset # Reset is also called after the progress_buf is updated. 
 
         pass_time_max = self.progress_buf >= self.max_episode_length - 1
-        pass_time_motion_len = time >= self._motion_lib._motion_lengths
+        if not MODIFY:
+            pass_time_motion_len = time >= self._motion_lib._motion_lengths
+        else:
+            pass_time_motion_len = time >= 500
         
         if self.cycle_motion:
             pass_time = pass_time_max
@@ -1312,6 +1479,10 @@ def compute_imitation_observations_v6(root_pos, root_rot, body_pos, body_rot, bo
     # Future tracks in this obs will not contain future diffs.
     obs = []
     B, J, _ = body_pos.shape
+    # print('----------------------------------------')
+    # print('body_obs.shape')
+    # print(body_pos.shape)
+    # print('----------------------------------------')
 
     if not upright:
         root_rot = remove_base_rot(root_rot)
@@ -1328,6 +1499,7 @@ def compute_imitation_observations_v6(root_pos, root_rot, body_pos, body_rot, bo
 
     body_rot[:, None].repeat_interleave(time_steps, 1)
     diff_global_body_rot = torch_utils.quat_mul(ref_body_rot.view(B, time_steps, J, 4), torch_utils.quat_conjugate(body_rot[:, None].repeat_interleave(time_steps, 1)))
+    # diff_global_body_rot = torch_utils.quat_mul(body_rot[:, None].repeat_interleave(time_steps, 1), diff_global_body_rot)
     diff_local_body_rot_flat = torch_utils.quat_mul(torch_utils.quat_mul(heading_inv_rot_expand.view(-1, 4), diff_global_body_rot.view(-1, 4)), heading_rot_expand.view(-1, 4))  # Need to be change of basis
     
     ##### linear and angular  Velocity differences

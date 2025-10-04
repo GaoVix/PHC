@@ -107,7 +107,7 @@ def parse_sim_params(cfg):
     # Override num_threads if passed on the command line
     if not cfg.sim.use_flex and cfg.sim.physx.num_threads > 0:
         sim_params.physx.num_threads = cfg.sim.physx.num_threads
-    
+
     return sim_params
 
 def create_rlgpu_env(**kwargs):
@@ -305,7 +305,7 @@ def main(cfg_hydra: DictConfig) -> None:
         )
         wandb.config.update(cfg, allow_val_change=True)
         wandb.run.name = cfg.exp_name
-        wandb.run.save()
+        # wandb.run.save()
     
     set_seed(cfg.get("seed", -1), cfg.get("torch_deterministic", False))
 

@@ -299,7 +299,10 @@ class IMAMPPlayerContinuous(amp_players.AMPPlayerContinuous):
             with torch.no_grad():
                 for n in range(self.max_steps):
                     obs_dict = self.env_reset(done_indices)
-
+                    # obs_dict_np = {key: value.cpu().numpy() if isinstance(value, torch.Tensor) else value for key, value in obs_dict.items()}
+                    # np.savez("obs_dict_data.npz", **obs_dict_np)
+                    # print("obs_dict saved as obs_dict_data.npz")
+                    # raise RuntimeError
 
                     if COLLECT_Z: z = self.get_z(obs_dict)
                         

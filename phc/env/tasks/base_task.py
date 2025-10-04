@@ -129,6 +129,10 @@ class BaseTask():
             # bgsk = threading.Thread(target=self.setup_video_client, daemon=True).start()
             bgsk = threading.Thread(target=self.setup_talk_client, daemon=False).start()
 
+        # self.actionss = []
+        # self.len_a = 0
+        # self.buffer = []
+
     def create_viewer(self):
         if self.headless == False:
             # headless server mode will use the smart display
@@ -206,6 +210,13 @@ class BaseTask():
         return 1
 
     def create_sim(self, compute_device, graphics_device, physics_engine, sim_params):
+        # save_yaml(sim_params, "/mnt/Exp_HDD/dataset/test/off_sim_params.yaml", float_ndigits=6).splitlines(keepends=True)
+        # print(dir(sim_params.physx.contact_collection))
+        # print(dir(sim_params.up_axis.UP_AXIS_Y))
+        # print(dir(sim_params.up_axis.UP_AXIS_Z))
+        # save_sim_params_to_yaml(sim_params, filename="/mnt/Exp_HDD/dataset/test/off_sim_params.yaml")
+        # raise RuntimeError
+
         sim = self.gym.create_sim(compute_device, graphics_device, physics_engine, sim_params)
         if sim is None:
             print("*** Failed to create sim")
@@ -216,7 +227,35 @@ class BaseTask():
     def step(self, actions):
         if self.dr_randomizations.get('actions', None):
             actions = self.dr_randomizations['actions']['noise_lambda'](actions)
+        # assert self.obs_buf.shape[-1] == 1480
+        # assert self.obs_buf.shape[0] == 1024 == actions.shape[-0]
+        # info = {
+        #     "obs": self.obs_buf.clone().cpu().numpy(),
+        #     "actions": actions.clone().cpu().numpy(),
+        #     'dof_pos': self._dof_pos.clone().cpu().numpy(),
+        #     'dof_vel': self._dof_vel.clone().cpu().numpy(),
+        #     'body_rot': self._rigid_body_rot.clone().cpu().numpy(),
+        #     'body_vel': self._rigid_body_vel.clone().cpu().numpy(),
+        #     'body_ang_vel': self._rigid_body_ang_vel.clone().cpu().numpy(),
+        #     "body_pos": self._rigid_body_pos.clone().cpu().numpy(),
+        #     'torques': self.torques.clone().cpu().numpy() if len(self.buffer) > 0 else None
+        # }
+        # self.buffer.append(info)
+        # print(f"Processing .... {len(self.buffer)}/500")
+        # if len(self.buffer) == 500:
+        #     coll_data = np.array(self.buffer)
+        #     filename = f"/mnt/Exp_HDD/dataset/test/obs_state_action_tor.npz"
+        #     np.savez(filename, coll_data)
+        #     print('Task Finished!!!')
+        #     import sys
+        #     sys.exit()
         # apply actions
+        # self.actionss.append(np.array(actions))
+        # self.len_a += 1
+        # if self.len_a == 200:
+        #     dataa = np.array(self.actionss)
+        #     np.save("/mnt/Exp_HDD/dataset/test/actions.npy", dataa)
+        #     raise RuntimeError
         self.pre_physics_step(actions)
 
         # step physics and render each frame
@@ -716,3 +755,90 @@ def get_attr_val_from_sample(sample, offset, prop, attr):
         return smpl, offset + prop[attr].shape[0]
     else:
         return sample[offset], offset + 1
+
+import yaml
+
+def convert_sim_params_to_dict(sim_params):
+    sim_params_dict = {
+        'dt': sim_params.dt,
+        'enable_actor_creation_warning': sim_params.enable_actor_creation_warning,
+        'flex': convert_flex_params_to_dict(sim_params.flex) if sim_params.flex else None,
+        'gravity': convert_vec3_to_list(sim_params.gravity),
+        'num_client_threads': sim_params.num_client_threads,
+        'physx': convert_physx_params_to_dict(sim_params.physx) if sim_params.physx else None,
+        'stress_visualization': sim_params.stress_visualization,
+        'stress_visualization_max': sim_params.stress_visualization_max,
+        'stress_visualization_min': sim_params.stress_visualization_min,
+        'substeps': sim_params.substeps,
+        'up_axis': convert_up_axis_to_dict(sim_params.up_axis),
+        'use_gpu_pipeline': sim_params.use_gpu_pipeline
+    }
+    return sim_params_dict
+
+def convert_flex_params_to_dict(flex_params):
+    return {
+        'shape_collision_margin': flex_params.shape_collision_margin,
+        'num_outer_iterations': flex_params.num_outer_iterations,
+        'num_inner_iterations': flex_params.num_inner_iterations,
+        "contact_regularization": flex_params.contact_regularization,
+        'deterministic_mode': flex_params.deterministic_mode,
+        'dynamic_friction': flex_params.dynamic_friction,
+        'friction_mode': flex_params.friction_mode, 
+        'geometric_stiffness': flex_params.geometric_stiffness, 
+        'max_rigid_contacts': flex_params.max_rigid_contacts, 
+        'max_soft_contacts': flex_params.max_soft_contacts, 
+        'particle_friction': flex_params.particle_friction, 
+        'relaxation': flex_params.relaxation, 
+        'return_contacts': flex_params.return_contacts, 
+        'shape_collision_distance': flex_params.shape_collision_distance, 
+        'solver_type': flex_params.solver_type, 
+        'static_friction': flex_params.static_friction, 
+        'warm_start': flex_params.warm_start
+
+    }
+
+def convert_physx_params_to_dict(physx_params):
+    return {
+        'solver_type': physx_params.solver_type,
+        'num_position_iterations': physx_params.num_position_iterations,
+        'num_velocity_iterations': physx_params.num_velocity_iterations,
+        'num_threads': physx_params.num_threads,
+        'use_gpu': physx_params.use_gpu,
+        'num_subscenes': physx_params.num_subscenes,
+        'max_gpu_contact_pairs': physx_params.max_gpu_contact_pairs,
+        'always_use_articulations': physx_params.always_use_articulations, 
+        'bounce_threshold_velocity': physx_params.bounce_threshold_velocity, 
+        'contact_collection': convert_contact_collection(physx_params.contact_collection),
+        'contact_offset': physx_params.contact_offset, 
+        'default_buffer_size_multiplier': physx_params.default_buffer_size_multiplier, 
+        'friction_correlation_distance': physx_params.friction_correlation_distance, 
+        'friction_offset_threshold': physx_params.friction_offset_threshold, 
+        'max_depenetration_velocity': physx_params.max_depenetration_velocity, 
+        'rest_offset': physx_params.rest_offset, 
+    }
+
+def convert_contact_collection(coll):
+    return{
+        'CC_ALL_SUBSTEPS': coll.CC_ALL_SUBSTEPS, 
+        'CC_LAST_SUBSTEP': coll.CC_LAST_SUBSTEP, 
+        'CC_NEVER': coll.CC_NEVER,
+        'name': coll.name
+    }
+
+def convert_vec3_to_list(vec3):
+    return [vec3.x, vec3.y, vec3.z]
+
+def convert_up_axis_to_dict(up_axis):
+    return {
+        'name': up_axis.name,
+        'UP_AXIS_Y': up_axis.UP_AXIS_Y,
+        'UP_AXIS_Z': up_axis.UP_AXIS_Z,
+    }
+
+def save_sim_params_to_yaml(sim_params, filename):
+    sim_params_dict = convert_sim_params_to_dict(sim_params)
+    
+    with open(filename, 'w') as yaml_file:
+        yaml.dump(sim_params_dict, yaml_file, default_flow_style=False)
+
+
