@@ -568,7 +568,7 @@ class HumanoidAMP(Humanoid):
                 if self.play_index == len(self.obs_state_action):
                     print("Play Task Finished!")
                     sys.exit()
-                env_ids = torch.from_numpy(np.arange(self.num_envs), device=self.device, dtype=torch.long)
+                env_ids = torch.from_numpy(np.arange(self.num_envs)).to(self.device)
                 self._set_env_state(
                     env_ids = env_ids,
                     root_pos = torch.from_numpy(info['body_pos'][:,0,:]).to(self.device),
