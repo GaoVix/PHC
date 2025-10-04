@@ -564,7 +564,7 @@ class HumanoidAMP(Humanoid):
 
                 print(f"curr play {self.play_index}/{len(self.obs_state_action)}")
                 info = self.obs_state_action[self.play_index]
-
+                self.play_index += 1
                 if self.play_index == len(self.obs_state_action):
                     print("Play Task Finished!")
                     sys.exit()
