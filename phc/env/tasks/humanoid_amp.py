@@ -540,10 +540,10 @@ class HumanoidAMP(Humanoid):
                 rb_rot = self.data_coll["ref_rb_rot"][self.play_index]
                 body_vel = self.data_coll["ref_body_vel"][self.play_index]
                 body_ang_vel = self.data_coll["ref_body_ang_vel"][self.play_index]
-                root_pos = rb_pos[0]
-                root_rot = rb_rot[0]
-                root_vel = body_vel[0]
-                root_ang_vel = body_ang_vel[0]
+                root_pos = rb_pos[:,0]
+                root_rot = rb_rot[:,0]
+                root_vel = body_vel[:,0]
+                root_ang_vel = body_ang_vel[:,0]
                 self.play_index += 1
                 if self.play_index == len(self.data_coll["dof_pos"]):
                     self.play_index = 0
