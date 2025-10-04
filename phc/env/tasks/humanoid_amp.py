@@ -562,7 +562,7 @@ class HumanoidAMP(Humanoid):
                 # self.render()
 
 
-
+                print(f"curr play {self.play_index}/{len(self.obs_state_action)}")
                 info = self.obs_state_action[self.play_index]
 
                 if self.play_index == len(self.obs_state_action):
