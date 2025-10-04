@@ -31,7 +31,7 @@ from collections import deque
 from tqdm import tqdm
 import copy
 
-MODIFY = True
+MODIFY = False
 
 
 class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
@@ -748,26 +748,26 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         
         return obs
 
-    # def save_all_motion_res_to_npz(self):
-    #     combined_motion_res = {
-    #         "root_pos": np.array([motion["root_pos"] for motion in self.motion_res_history]),
-    #         "root_rot": np.array([motion["root_rot"] for motion in self.motion_res_history]),
-    #         "dof_pos": np.array([motion["dof_pos"] for motion in self.motion_res_history]),
-    #         "root_vel": np.array([motion["root_vel"] for motion in self.motion_res_history]),
-    #         "root_ang_vel": np.array([motion["root_ang_vel"] for motion in self.motion_res_history]),
-    #         "dof_vel": np.array([motion["dof_vel"] for motion in self.motion_res_history]),
-    #         "smpl_params": np.array([motion["motion_bodies"] for motion in self.motion_res_history]),
-    #         "limb_weights": np.array([motion["motion_limb_weights"] for motion in self.motion_res_history]),
-    #         "pose_aa": np.array([motion["motion_aa"] for motion in self.motion_res_history]),
-    #         "ref_rb_pos": np.array([motion["rg_pos"] for motion in self.motion_res_history]),
-    #         "ref_rb_rot": np.array([motion["rb_rot"] for motion in self.motion_res_history]),
-    #         "ref_body_vel": np.array([motion["body_vel"] for motion in self.motion_res_history]),
-    #         "ref_body_ang_vel": np.array([motion["body_ang_vel"] for motion in self.motion_res_history]),
-    #     }
+    def save_all_motion_res_to_npz(self):
+        combined_motion_res = {
+            "root_pos": np.array([motion["root_pos"] for motion in self.motion_res_history]),
+            "root_rot": np.array([motion["root_rot"] for motion in self.motion_res_history]),
+            "dof_pos": np.array([motion["dof_pos"] for motion in self.motion_res_history]),
+            "root_vel": np.array([motion["root_vel"] for motion in self.motion_res_history]),
+            "root_ang_vel": np.array([motion["root_ang_vel"] for motion in self.motion_res_history]),
+            "dof_vel": np.array([motion["dof_vel"] for motion in self.motion_res_history]),
+            "smpl_params": np.array([motion["motion_bodies"] for motion in self.motion_res_history]),
+            "limb_weights": np.array([motion["motion_limb_weights"] for motion in self.motion_res_history]),
+            "pose_aa": np.array([motion["motion_aa"] for motion in self.motion_res_history]),
+            "ref_rb_pos": np.array([motion["rg_pos"] for motion in self.motion_res_history]),
+            "ref_rb_rot": np.array([motion["rb_rot"] for motion in self.motion_res_history]),
+            "ref_body_vel": np.array([motion["body_vel"] for motion in self.motion_res_history]),
+            "ref_body_ang_vel": np.array([motion["body_ang_vel"] for motion in self.motion_res_history]),
+        }
         
-    #     filename = f"/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz"
-    #     np.savez(filename, **combined_motion_res)
-    #     print(f"All motion_res saved as {filename}")
+        filename = f"/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz"
+        np.savez(filename, **combined_motion_res)
+        print(f"All motion_res saved as {filename}")
 
     def _compute_task_obs(self, env_ids=None, save_buffer = True):
         if not MODIFY:
@@ -818,24 +818,20 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
             ref_body_ang_vel = self.data_coll["ref_body_ang_vel"][self.play_index]
             self.play_index += 1
 
-            if (env_ids is not None):
-                body_pos = self._rigid_body_pos[env_ids]
-                body_rot = self._rigid_body_rot[env_ids]
-                body_vel = self._rigid_body_vel[env_ids]
-                body_ang_vel = self._rigid_body_ang_vel[env_ids]
-                ref_dof_pos = ref_dof_pos[env_ids]
-                ref_rb_pos = ref_rb_pos[env_ids]
-                ref_rb_rot = ref_rb_rot[env_ids]
-                ref_body_vel = ref_body_vel[env_ids]
-                ref_body_ang_vel = ref_body_ang_vel[env_ids]
-            # print(self._global_offset[env_ids])
-            # self.motion_res_history.append(motion_res)
-            # if len(self.motion_res_history) == 200:
-            #     self.save_all_motion_res_to_npz()
-            #     raise RuntimeError("Finished")
-            # print('---------------------------')
-            # print(f'current the {len(self.motion_res_history)} motion res recorded, there are {len(self.buffer)} info in buffer.')
-            # print('-------------------------')
+        body_pos = self._rigid_body_pos
+        body_rot = self._rigid_body_rot
+        body_vel = self._rigid_body_vel
+        body_ang_vel = self._rigid_body_ang_vel
+        env_ids = torch.arange(self.num_envs, dtype=torch.long, device=self.device)
+        print(self._global_offset[env_ids])
+        print(motion_res['root_pos'])
+        self.motion_res_history.append(motion_res)
+        if len(self.motion_res_history) == 200:
+            self.save_all_motion_res_to_npz()
+            raise RuntimeError("Finished")
+        print('---------------------------')
+        print(f'current the {len(self.motion_res_history)} motion res recorded, there are {len(self.buffer)} info in buffer.')
+        print('-------------------------')
 
 
         
