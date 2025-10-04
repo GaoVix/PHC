@@ -68,7 +68,7 @@ HACK_CONSISTENCY_TEST = False
 HACK_OUTPUT_MOTION = False
 HACK_OUTPUT_MOTION_ALL = False
 
-MODIFY = False
+MODIFY = True
 
 
 class HumanoidAMP(Humanoid):

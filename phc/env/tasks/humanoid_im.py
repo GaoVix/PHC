@@ -31,7 +31,7 @@ from collections import deque
 from tqdm import tqdm
 import copy
 
-MODIFY = False
+MODIFY = True
 DISABLE_RESET = False
 
 
@@ -126,7 +126,7 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         self.save_flag=True
         self.motion_res_history = []
         self.play_index = 0
-        # self.data_coll = np.load("/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz", allow_pickle=True)
+        self.data_coll = np.load("/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz", allow_pickle=True)
         self.init_state = np.load("/mnt/Exp_HDD/dataset/test/init_motion_res_data.npz", allow_pickle=True)
         return
     
@@ -818,18 +818,18 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
                 ref_body_ang_vel = self.data_coll["ref_body_ang_vel"][self.play_index]
                 self.play_index += 1
             else:
-                return torch.zeros(len(env_ids), 1480).to(self.device)
+                return torch.zeros(len(env_ids), 912).to(self.device)
 
 
-        if len(env_ids) == 1024:
-            print(motion_res['root_pos'])
-            self.motion_res_history.append(copy.deepcopy(motion_res))
-            if len(self.motion_res_history) == 200:
-                self.save_all_motion_res_to_npz()
-                raise RuntimeError("Finished")
-            print('---------------------------')
-            print(f'current the {len(self.motion_res_history)} motion res recorded.')
-            print('-------------------------')
+        # if len(env_ids) == 1024:
+        #     print(motion_res['root_pos'])
+        #     self.motion_res_history.append(copy.deepcopy(motion_res))
+        #     if len(self.motion_res_history) == 200:
+        #         self.save_all_motion_res_to_npz()
+        #         raise RuntimeError("Finished")
+        #     print('---------------------------')
+        #     print(f'current the {len(self.motion_res_history)} motion res recorded.')
+        #     print('-------------------------')
 
 
 
