@@ -32,7 +32,7 @@ from tqdm import tqdm
 import copy
 
 MODIFY = False
-DISABLE_RESET = True
+DISABLE_RESET = False
 
 
 class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
@@ -674,8 +674,9 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
 
     def _sample_time(self, motion_ids):
         # Motion imitation, no more blending and only sample at certain locations
-        if not MODIFY:
-            return self._motion_lib.sample_time_interval(motion_ids)
+        if MODIFY:
+            return
+        return self._motion_lib.sample_time_interval(motion_ids)
         # return self._motion_lib.sample_time(motion_ids)
 
     def _reset_task(self, env_ids):
