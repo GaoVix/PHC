@@ -1285,6 +1285,7 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         if not MODIFY:
             pass_time_motion_len = time >= self._motion_lib._motion_lengths
         else:
+            return
             pass_time_motion_len = time >= 500
         
         if self.cycle_motion:
