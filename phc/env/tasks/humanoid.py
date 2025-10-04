@@ -593,7 +593,8 @@ class Humanoid(BaseTask):
                 self._init_tensor_history(env_ids)
             
             self._compute_observations(env_ids)
-        
+        while True:
+            pass
         
         return
 
