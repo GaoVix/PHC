@@ -125,7 +125,7 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         self.save_flag=True
         self.motion_res_history = []
         self.play_index = 0
-        self.data_coll = np.load("/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz", allow_pickle=True)
+        # self.data_coll = np.load("/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz", allow_pickle=True)
         self.init_state = np.load("/mnt/Exp_HDD/dataset/test/init_motion_res_data.npz", allow_pickle=True)
         return
     
