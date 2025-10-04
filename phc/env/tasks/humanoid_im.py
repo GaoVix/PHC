@@ -830,7 +830,7 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
             self.save_all_motion_res_to_npz()
             raise RuntimeError("Finished")
         print('---------------------------')
-        print(f'current the {len(self.motion_res_history)} motion res recorded, there are {len(self.buffer)} info in buffer.')
+        print(f'current the {len(self.motion_res_history)} motion res recorded.')
         print('-------------------------')
 
 
