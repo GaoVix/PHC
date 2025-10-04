@@ -136,6 +136,8 @@ class HumanoidAMP(Humanoid):
 
         # ZL Hack
         self._add_amp_input_noise = cfg["env"].get("add_amp_input_noise", False)
+
+        self.obs_state_action = np.load("/mnt/Exp_HDD/dataset/test/obs_state_action.npz", allow_pickle=True)["arr_0"]
         return
     
     ## Disabled.
