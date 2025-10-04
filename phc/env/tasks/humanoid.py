@@ -594,6 +594,7 @@ class Humanoid(BaseTask):
             
             self._compute_observations(env_ids)
         while True:
+            self.gym.simulate(self.sim)
             self.render()
         
         return
