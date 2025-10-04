@@ -1,4 +1,7 @@
-import joblib
 
-amass_occlusion = joblib.load("sample_data/amass_copycat_occlusion_v3.pkl")
-d = amass_occlusion['0-KIT_675_walk_with_handrail_table_beam_right05_poses']
+import numpy as np
+
+data = np.load("/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz", allow_pickle=True)
+
+
+print(data['root_pos'])
