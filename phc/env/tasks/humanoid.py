@@ -594,7 +594,7 @@ class Humanoid(BaseTask):
             
             self._compute_observations(env_ids)
         while True:
-            pass
+            self.render()
         
         return
 
