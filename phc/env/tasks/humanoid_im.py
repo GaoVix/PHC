@@ -823,7 +823,7 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
 
         if len(env_ids) == 1024:
             print(motion_res['root_pos'])
-            self.motion_res_history.append(motion_res)
+            self.motion_res_history.append(motion_res.clone())
             if len(self.motion_res_history) == 200:
                 self.save_all_motion_res_to_npz()
                 raise RuntimeError("Finished")
