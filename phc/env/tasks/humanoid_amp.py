@@ -536,6 +536,7 @@ class HumanoidAMP(Humanoid):
             while True:
                 env_ids = torch.from_numpy(np.arange(self.num_envs)).to(self.device)
                 dof_pos = self.data_coll["dof_pos"][self.play_index]
+                dof_vel = self.data_coll["dof_vel"][self.play_index]
                 rb_pos = self.data_coll["ref_rb_pos"][self.play_index]
                 rb_rot = self.data_coll["ref_rb_rot"][self.play_index]
                 body_vel = self.data_coll["ref_body_vel"][self.play_index]
