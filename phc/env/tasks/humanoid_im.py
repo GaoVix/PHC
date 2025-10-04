@@ -824,16 +824,15 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         # body_rot = self._rigid_body_rot
         # body_vel = self._rigid_body_vel
         # body_ang_vel = self._rigid_body_ang_vel
-        # env_ids = torch.arange(self.num_envs, dtype=torch.long, device=self.device)
-        # print(self._global_offset[env_ids])
-        # print(motion_res['root_pos'])
-        # self.motion_res_history.append(motion_res)
-        # if len(self.motion_res_history) == 200:
-        #     self.save_all_motion_res_to_npz()
-        #     raise RuntimeError("Finished")
-        # print('---------------------------')
-        # print(f'current the {len(self.motion_res_history)} motion res recorded.')
-        # print('-------------------------')
+        if len(env_ids) == 1024:
+            print(motion_res['root_pos'])
+            self.motion_res_history.append(motion_res)
+            if len(self.motion_res_history) == 200:
+                self.save_all_motion_res_to_npz()
+                raise RuntimeError("Finished")
+            print('---------------------------')
+            print(f'current the {len(self.motion_res_history)} motion res recorded.')
+            print('-------------------------')
 
 
         
