@@ -549,7 +549,7 @@ class HumanoidAMP(Humanoid):
                 root_vel = body_vel[:,0]
                 root_ang_vel = body_ang_vel[:,0]
                 self.play_index += 1
-                if self.play_index == len(self.data_coll["dof_pos"]):
+                if self.play_index == len(self.data_coll['dof_pos']):
                     self.play_index = 0
                 self._set_env_state(env_ids=env_ids, root_pos=root_pos, root_rot=root_rot, 
                                     dof_pos=dof_pos, root_vel=root_vel, root_ang_vel=root_ang_vel, 
