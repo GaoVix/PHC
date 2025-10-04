@@ -536,7 +536,7 @@ class HumanoidAMP(Humanoid):
         # root_pos[..., 2] += 0.5
         if MODIFY:
             while True:
-                print(f"curr play {self.play_index}/{len(self.data_coll["dof_pos"])}")
+                print(f"curr play {self.play_index}/{len(self.data_coll['dof_pos'])}")
                 env_ids = torch.from_numpy(np.arange(self.num_envs)).to(self.device)
                 dof_pos = self.data_coll["dof_pos"][self.play_index]
                 dof_vel = self.data_coll["dof_vel"][self.play_index]
