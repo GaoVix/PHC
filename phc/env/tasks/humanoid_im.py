@@ -31,7 +31,7 @@ from collections import deque
 from tqdm import tqdm
 import copy
 
-MODIFY = False
+MODIFY = True
 DISABLE_RESET = False
 
 
@@ -126,7 +126,7 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         self.save_flag=True
         self.motion_res_history = []
         self.play_index = 0
-        # self.data_coll = np.load("/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz", allow_pickle=True)
+        self.data_coll = np.load("/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz", allow_pickle=True)
         self.init_state = np.load("/mnt/Exp_HDD/dataset/test/init_motion_res_data.npz", allow_pickle=True)
         return
     
@@ -750,40 +750,41 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         
         return obs
 
-    def save_all_motion_res_to_npz(self):
-        combined_motion_res = {
-            "root_pos": np.array([motion["root_pos"] for motion in self.motion_res_history]),
-            "root_rot": np.array([motion["root_rot"] for motion in self.motion_res_history]),
-            "dof_pos": np.array([motion["dof_pos"] for motion in self.motion_res_history]),
-            "root_vel": np.array([motion["root_vel"] for motion in self.motion_res_history]),
-            "root_ang_vel": np.array([motion["root_ang_vel"] for motion in self.motion_res_history]),
-            "dof_vel": np.array([motion["dof_vel"] for motion in self.motion_res_history]),
-            "smpl_params": np.array([motion["motion_bodies"] for motion in self.motion_res_history]),
-            "limb_weights": np.array([motion["motion_limb_weights"] for motion in self.motion_res_history]),
-            "pose_aa": np.array([motion["motion_aa"] for motion in self.motion_res_history]),
-            "ref_rb_pos": np.array([motion["rg_pos"] for motion in self.motion_res_history]),
-            "ref_rb_rot": np.array([motion["rb_rot"] for motion in self.motion_res_history]),
-            "ref_body_vel": np.array([motion["body_vel"] for motion in self.motion_res_history]),
-            "ref_body_ang_vel": np.array([motion["body_ang_vel"] for motion in self.motion_res_history]),
-        }
+    # def save_all_motion_res_to_npz(self):
+    #     combined_motion_res = {
+    #         "root_pos": np.array([motion["root_pos"] for motion in self.motion_res_history]),
+    #         "root_rot": np.array([motion["root_rot"] for motion in self.motion_res_history]),
+    #         "dof_pos": np.array([motion["dof_pos"] for motion in self.motion_res_history]),
+    #         "root_vel": np.array([motion["root_vel"] for motion in self.motion_res_history]),
+    #         "root_ang_vel": np.array([motion["root_ang_vel"] for motion in self.motion_res_history]),
+    #         "dof_vel": np.array([motion["dof_vel"] for motion in self.motion_res_history]),
+    #         "smpl_params": np.array([motion["motion_bodies"] for motion in self.motion_res_history]),
+    #         "limb_weights": np.array([motion["motion_limb_weights"] for motion in self.motion_res_history]),
+    #         "pose_aa": np.array([motion["motion_aa"] for motion in self.motion_res_history]),
+    #         "ref_rb_pos": np.array([motion["rg_pos"] for motion in self.motion_res_history]),
+    #         "ref_rb_rot": np.array([motion["rb_rot"] for motion in self.motion_res_history]),
+    #         "ref_body_vel": np.array([motion["body_vel"] for motion in self.motion_res_history]),
+    #         "ref_body_ang_vel": np.array([motion["body_ang_vel"] for motion in self.motion_res_history]),
+    #     }
         
-        filename = f"/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz"
-        np.savez(filename, **combined_motion_res)
-        print(f"All motion_res saved as {filename}")
+    #     filename = f"/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz"
+    #     np.savez(filename, **combined_motion_res)
+    #     print(f"All motion_res saved as {filename}")
 
     def _compute_task_obs(self, env_ids=None, save_buffer = True):
+        if (env_ids is None):
+            body_pos = self._rigid_body_pos
+            body_rot = self._rigid_body_rot
+            body_vel = self._rigid_body_vel
+            body_ang_vel = self._rigid_body_ang_vel
+            env_ids = torch.arange(self.num_envs, dtype=torch.long, device=self.device)
+        else:
+            body_pos = self._rigid_body_pos[env_ids]
+            body_rot = self._rigid_body_rot[env_ids]
+            body_vel = self._rigid_body_vel[env_ids]
+            body_ang_vel = self._rigid_body_ang_vel[env_ids]
+
         if not MODIFY:
-            if (env_ids is None):
-                body_pos = self._rigid_body_pos
-                body_rot = self._rigid_body_rot
-                body_vel = self._rigid_body_vel
-                body_ang_vel = self._rigid_body_ang_vel
-                env_ids = torch.arange(self.num_envs, dtype=torch.long, device=self.device)
-            else:
-                body_pos = self._rigid_body_pos[env_ids]
-                body_rot = self._rigid_body_rot[env_ids]
-                body_vel = self._rigid_body_vel[env_ids]
-                body_ang_vel = self._rigid_body_ang_vel[env_ids]
 
             curr_gender_betas = self.humanoid_shapes[env_ids]
             
@@ -805,34 +806,35 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
                 motion_res["motion_bodies"], motion_res["motion_limb_weights"], motion_res["motion_aa"], motion_res["rg_pos"], motion_res["rb_rot"], motion_res["body_vel"], motion_res["body_ang_vel"]
         
         else:
-            body_pos = self._rigid_body_pos
-            body_rot = self._rigid_body_rot
-            body_vel = self._rigid_body_vel
-            body_ang_vel = self._rigid_body_ang_vel
-            # env_ids = torch.arange(self.num_envs, dtype=torch.long, device=self.device)
-            # motion_res = self.data_coll[self.play_index]
-            time_steps = 1
+            if len(env_ids) == 1024:
+                # env_ids = torch.arange(self.num_envs, dtype=torch.long, device=self.device)
+                # motion_res = self.data_coll[self.play_index]
+                time_steps = 1
 
-            ref_dof_pos = self.data_coll["dof_pos"][self.play_index]
-            ref_rb_pos = self.data_coll["ref_rb_pos"][self.play_index]
-            ref_rb_rot = self.data_coll["ref_rb_rot"][self.play_index]
-            ref_body_vel = self.data_coll["ref_body_vel"][self.play_index]
-            ref_body_ang_vel = self.data_coll["ref_body_ang_vel"][self.play_index]
-            self.play_index += 1
+                ref_dof_pos = self.data_coll["dof_pos"][self.play_index]
+                ref_rb_pos = self.data_coll["ref_rb_pos"][self.play_index]
+                ref_rb_rot = self.data_coll["ref_rb_rot"][self.play_index]
+                ref_body_vel = self.data_coll["ref_body_vel"][self.play_index]
+                ref_body_ang_vel = self.data_coll["ref_body_ang_vel"][self.play_index]
+                self.play_index += 1
+            else:
+                return torch.zeros(len(env_ids), 1480).to(self.device)
 
         # body_pos = self._rigid_body_pos
         # body_rot = self._rigid_body_rot
         # body_vel = self._rigid_body_vel
         # body_ang_vel = self._rigid_body_ang_vel
-        if len(env_ids) == 1024:
-            print(motion_res['root_pos'])
-            self.motion_res_history.append(motion_res)
-            if len(self.motion_res_history) == 200:
-                self.save_all_motion_res_to_npz()
-                raise RuntimeError("Finished")
-            print('---------------------------')
-            print(f'current the {len(self.motion_res_history)} motion res recorded.')
-            print('-------------------------')
+        # if len(env_ids) == 1024:
+            # print(motion_res['root_pos'])
+            # self.motion_res_history.append(motion_res)
+            # if len(self.motion_res_history) == 200:
+            #     self.save_all_motion_res_to_npz()
+            #     raise RuntimeError("Finished")
+            # print('---------------------------')
+            # print(f'current the {len(self.motion_res_history)} motion res recorded.')
+            # print('-------------------------')
+
+
 
 
         
