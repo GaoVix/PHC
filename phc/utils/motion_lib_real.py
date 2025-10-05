@@ -206,19 +206,16 @@ class MotionLibReal(MotionLibBase):
         self.dvs = torch.cat([m.dof_vels for m in motions], dim=0).float().to(self._device)
         
         if "global_translation_extend" in motions[0].__dict__:
-            # w/o
-            print(666666666)
+            # with
             self.gts_t = torch.cat([m.global_translation_extend for m in motions], dim=0).float().to(self._device)
             self.grs_t = torch.cat([m.global_rotation_extend for m in motions], dim=0).float().to(self._device)
             self.gvs_t = torch.cat([m.global_velocity_extend for m in motions], dim=0).float().to(self._device)
             self.gavs_t = torch.cat([m.global_angular_velocity_extend for m in motions], dim=0).float().to(self._device)
         
         if "dof_pos" in motions[0].__dict__:
-            # w/o
             self.dof_pos = torch.cat([m.dof_pos for m in motions], dim=0).float().to(self._device)
         
         if flags.real_traj:
-            # w/o
             self.q_gts = torch.cat(self.q_gts, dim=0).float().to(self._device)
             self.q_grs = torch.cat(self.q_grs, dim=0).float().to(self._device)
             self.q_gavs = torch.cat(self.q_gavs, dim=0).float().to(self._device)
@@ -302,7 +299,6 @@ class MotionLibReal(MotionLibBase):
         
         if "gts_t" in self.__dict__:
             # with
-            print(self.gts_t)
             rg_pos_t0 = self.gts_t[f0l]
             rg_pos_t1 = self.gts_t[f1l]
             
