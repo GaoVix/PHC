@@ -340,7 +340,12 @@ class MotionLibReal(MotionLibBase):
             body_vel[:, self.track_idx] = q_body_vel
             body_ang_vel[:, self.track_idx] = q_ang_vel
             
-        
+        print('--------------------------------------------')
+        print('rg_pos')
+        print(rg_pos.shape)
+        print('rg_pos_t')
+        print(rg_pos_t.shape)
+        print('--------------------------------------------')
         return_dict.update({
             "root_pos": rg_pos[..., 0, :].clone(),
             "root_rot": rb_rot[..., 0, :].clone(),
