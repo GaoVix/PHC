@@ -341,6 +341,14 @@ class MotionLibReal(MotionLibBase):
             body_ang_vel[:, self.track_idx] = q_ang_vel
             
         print('--------------------------------------------')
+        print('dof_pos')
+        print(dof_pos.shape)
+        print('dof_vel')
+        print(dof_vel.shape)
+        print('body_vel_t')
+        print(body_vel_t.shape)
+        print('body_ang_vel_t')
+        print(body_ang_vel_t.shape)
         print('rg_pos')
         print(rg_pos.shape)
         print('rg_pos_t')
