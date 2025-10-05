@@ -31,7 +31,7 @@ from collections import deque
 from tqdm import tqdm
 import copy
 
-MODIFY = True
+MODIFY = False
 DISABLE_RESET = False
 
 
