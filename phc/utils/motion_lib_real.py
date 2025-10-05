@@ -206,15 +206,18 @@ class MotionLibReal(MotionLibBase):
         self.dvs = torch.cat([m.dof_vels for m in motions], dim=0).float().to(self._device)
         
         if "global_translation_extend" in motions[0].__dict__:
+            print(000000000000)
             self.gts_t = torch.cat([m.global_translation_extend for m in motions], dim=0).float().to(self._device)
             self.grs_t = torch.cat([m.global_rotation_extend for m in motions], dim=0).float().to(self._device)
             self.gvs_t = torch.cat([m.global_velocity_extend for m in motions], dim=0).float().to(self._device)
             self.gavs_t = torch.cat([m.global_angular_velocity_extend for m in motions], dim=0).float().to(self._device)
         
         if "dof_pos" in motions[0].__dict__:
+            print(11111111111111)
             self.dof_pos = torch.cat([m.dof_pos for m in motions], dim=0).float().to(self._device)
         
         if flags.real_traj:
+            print(22222222222222)
             self.q_gts = torch.cat(self.q_gts, dim=0).float().to(self._device)
             self.q_grs = torch.cat(self.q_grs, dim=0).float().to(self._device)
             self.q_gavs = torch.cat(self.q_gavs, dim=0).float().to(self._device)
@@ -247,6 +250,7 @@ class MotionLibReal(MotionLibBase):
         f1l = frame_idx1 + self.length_starts[motion_ids]
 
         if "dof_pos" in self.__dict__:
+            print(3333333333333333)
             local_rot0 = self.dof_pos[f0l]
             local_rot1 = self.dof_pos[f1l]
         else:
@@ -296,6 +300,7 @@ class MotionLibReal(MotionLibBase):
         return_dict = {}
         
         if "gts_t" in self.__dict__:
+            print(444444444444)
             rg_pos_t0 = self.gts_t[f0l]
             rg_pos_t1 = self.gts_t[f1l]
             
@@ -308,6 +313,7 @@ class MotionLibReal(MotionLibBase):
             body_ang_vel_t0 = self.gavs_t[f0l]
             body_ang_vel_t1 = self.gavs_t[f1l]
             if offset is None:
+                print(5555555555555555)
                 rg_pos_t = (1.0 - blend_exp) * rg_pos_t0 + blend_exp * rg_pos_t1  
             else:
                 rg_pos_t = (1.0 - blend_exp) * rg_pos_t0 + blend_exp * rg_pos_t1 + offset[..., None, :]
