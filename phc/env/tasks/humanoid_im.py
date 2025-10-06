@@ -150,11 +150,11 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
 
             self._set_env_state(
                 env_ids = env_ids,
-                root_pos = info['root_pos'][:,0,:],
-                root_rot = info['root_rot'][:,0,:],
+                root_pos = info['root_pos'],
+                root_rot = info['root_rot'],
                 dof_pos = info['dof_pos'],
-                root_vel = info['body_vel'][:,0,:],
-                root_ang_vel = info['body_ang_vel'][:,0,:],
+                root_vel = info['root_vel'],
+                root_ang_vel = info['root_ang_vel'],
                 dof_vel = info['dof_vel'],
                 rigid_body_pos = info['rg_pos'],
                 rigid_body_rot = info['rb_rot'],
