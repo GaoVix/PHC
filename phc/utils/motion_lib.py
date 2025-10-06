@@ -273,7 +273,12 @@ class MotionLib():
         self.body_pos = torch.cat([torch.as_tensor(m['body_pos']) for m in _motions], dim=0).float().to(self._device)
         self.body_quat = torch.cat([torch.as_tensor(m['body_quat']) for m in _motions], dim=0).float().to(self._device)
         self.body_lin_vel = torch.cat([torch.as_tensor(m['body_lin_vel']) for m in _motions], dim=0).float().to(self._device)
-        self.body_ang_vel = torch.cat([quat_rotate(torch.as_tensor(m['body_quat']), torch.as_tensor(m['body_ang_vel'])) for m in _motions], dim=0).float().to(self._device)
+        body_ang_vel = torch.cat([torch.as_tensor(m['body_ang_vel']) for m in _motions], dim=0).float().to(self._device)
+        body_ang_vel = []
+        for i in range(self.body_pos.shape[1]):
+            body_ang_vel.append(quat_rotate(torch.as_tensor(self.body_quat[:,i,:]), torch.as_tensor(body_ang_vel[:,i,:])))
+        self.body_ang_vel = torch.cat(body_ang_vel, dim=1)
+        # self.body_ang_vel = torch.cat([quat_rotate(torch.as_tensor(m['body_quat']), torch.as_tensor(m['body_ang_vel'])) for m in _motions], dim=0).float().to(self._device)
 
 
         self.num_motions = len(_motions)
