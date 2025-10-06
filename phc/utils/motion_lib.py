@@ -76,6 +76,7 @@ class MotionLib():
 
     def sample_time_interval(self, motion_ids, truncate_time=None):
         phase = torch.rand(motion_ids.shape, device=self._device)
+        print(motion_ids)
         motion_len = self._motion_lengths[motion_ids]
         if (truncate_time is not None):
             assert (truncate_time >= 0.0)
