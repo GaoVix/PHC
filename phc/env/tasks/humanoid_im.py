@@ -1093,6 +1093,10 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         else:
             return self.ref_motion_cache
         
+        print('-------------------')
+        print(motion_ids)
+        print(motion_times)
+        print('-------------------')
         motion_res = self._motion_lib.get_motion_state(motion_ids, motion_times, offset=offset)
 
         self.ref_motion_cache.update(motion_res)
