@@ -298,7 +298,17 @@ class MotionLib():
         num_frames = self._motion_num_frames[motion_ids]
         dt = self._motion_dt[motion_ids]
 
+        print(motion_ids)
+        print('-------------------')
+        print(motion_times)
+
         frame_idx0, frame_idx1, blend = self._calc_frame_blend(motion_times, motion_len, num_frames, dt)
+
+        print(num_frames)
+        print(frame_idx0)
+        print(frame_idx1)
+        print(self.length_starts[motion_ids])
+
         f0l = frame_idx0 + self.length_starts[motion_ids]
         f1l = frame_idx1 + self.length_starts[motion_ids]
 
@@ -366,9 +376,10 @@ class MotionLib():
         return return_dict
 
     
-    def _calc_frame_blend(self, time, len, num_frames, dt):
+    def _calc_frame_blend(self, time, length, num_frames, dt):
         time = time.clone()
-        phase = time / len
+        print(time)
+        phase = time / length
         phase = torch.clip(phase, 0.0, 1.0)  # clip time to be within motion length.
         time[time < 0] = 0
 
