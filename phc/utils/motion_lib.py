@@ -278,6 +278,8 @@ class MotionLib():
         for i in range(self.body_pos.shape[1]):
             body_ang_vel_global.append(quat_rotate(torch.as_tensor(self.body_quat[:,i,:]), torch.as_tensor(body_ang_vel[:,i,:])))
         self.body_ang_vel = torch.cat(body_ang_vel_global, dim=0)
+        print(self.body_ang_vel.shape)
+        assert self.body_ang_vel.shape[-2] == 38
         # self.body_ang_vel = torch.cat([quat_rotate(torch.as_tensor(m['body_quat']), torch.as_tensor(m['body_ang_vel'])) for m in _motions], dim=0).float().to(self._device)
 
 
