@@ -244,7 +244,7 @@ class MotionLib():
             curr_file = motion_files[f]
             print("Loading {:d}/{:d} motion files: {:s}".format(f + 1, num_motion_files, curr_file))
             curr_motion = np.load(curr_file, allow_pickle=True)
-            motion_fps = curr_motion['fps']
+            motion_fps = curr_motion['fps'].item()
             curr_dt = 1.0 / motion_fps
 
             num_frames = curr_motion['dof_pos'].shape[0]
@@ -259,8 +259,6 @@ class MotionLib():
             
             _motion_files.append(curr_file)
 
-        print(_motion_lengths)
-        print(_motion_fps)
         self._motion_lengths = torch.tensor(_motion_lengths, device=self._device, dtype=torch.float32)
         self._motion_fps = torch.tensor(_motion_fps, device=self._device, dtype=torch.float32)
         self._motion_dt = torch.tensor(_motion_dt, device=self._device, dtype=torch.float32)
