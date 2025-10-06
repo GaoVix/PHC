@@ -31,6 +31,10 @@ import imageio
 from collections import deque
 from tqdm import tqdm
 import copy
+import sys
+
+def to_torch(x, dtype=torch.float, device='cuda:0', requires_grad=False):
+    return torch.tensor(x, dtype=dtype, device=device, requires_grad=requires_grad)
 
 MODIFY = False
 DISABLE_RESET = False
@@ -130,7 +134,39 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         self.play_index = 0
         self.data_coll = np.load("/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz", allow_pickle=True)
         self.init_state = np.load("/mnt/Exp_HDD/dataset/test/init_motion_res_data.npz", allow_pickle=True)
+        self.play_state()
         return
+    
+
+    def play_state(self):
+
+        motion_ids = torch.zeros(self.num_envs, dtype=torch.long).to(self.device)
+        motion_times = torch.zeros(self.num_envs, dtype=torch.float32).to(self.device)
+        while True:
+            info = self._get_state_from_motionlib_cache(motion_ids, motion_times, self._global_offset)
+            motion_times += 0.02
+
+            env_ids = to_torch(np.arange(self.num_envs), device=self.device, dtype=torch.long)
+
+            self._set_env_state(
+                env_ids = env_ids,
+                root_pos = info['root_pos'][:,0,:],
+                root_rot = info['root_rot'][:,0,:],
+                dof_pos = info['dof_pos'],
+                root_vel = info['body_vel'][:,0,:],
+                root_ang_vel = info['body_ang_vel'][:,0,:],
+                dof_vel = info['dof_vel'],
+                rigid_body_pos = info['rg_pos'],
+                rigid_body_rot = info['rb_rot'],
+                rigid_body_vel = info['body_vel'],
+                rigid_body_ang_vel = info['body_ang_vel']
+            )
+            self._reset_env_tensors(env_ids)
+            self.gym.simulate(self.sim)
+            if self.device == 'cpu':
+                self.gym.fetch_results(self.sim, True)
+            self._refresh_sim_tensors()
+            self.render()
     
     
     def pause_func(self, action):
