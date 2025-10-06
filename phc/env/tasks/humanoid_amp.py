@@ -653,6 +653,7 @@ class HumanoidAMP(Humanoid):
         return
 
     def _init_amp_obs_ref(self, env_ids, motion_ids, motion_times):
+        return
         if MODIFY:
             return
         dt = self.dt
