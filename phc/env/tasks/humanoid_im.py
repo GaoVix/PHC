@@ -122,7 +122,8 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         self.viewer_o3d = flags.render_o3d
         self.vis_ref = True
         self.vis_contact = False
-        self._sampled_motion_ids = torch.arange(self.num_envs).to(self.device)
+        # self._sampled_motion_ids = torch.arange(self.num_envs).to(self.device)
+        self._sampled_motion_ids = torch.zeros(self.num_envs).to(self.device)
         self.create_o3d_viewer()
         self.save_flag=True
         self.motion_res_history = []
