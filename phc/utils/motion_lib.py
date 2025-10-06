@@ -76,7 +76,6 @@ class MotionLib():
 
     def sample_time_interval(self, motion_ids, truncate_time=None):
         phase = torch.rand(motion_ids.shape, device=self._device)
-        print(motion_ids)
         motion_len = self._motion_lengths[motion_ids]
         if (truncate_time is not None):
             assert (truncate_time >= 0.0)
@@ -331,8 +330,8 @@ class MotionLib():
         # root_ang_vel1 = self.root_ang_vel[f1l]
         body_pos0 = self.body_pos[f0l]
         body_pos1 = self.body_pos[f1l]
-        body_rot0 = self.body_rot[f0l]
-        body_rot1 = self.body_rot[f1l]
+        body_rot0 = self.body_quat[f0l]
+        body_rot1 = self.body_quat[f1l]
         body_lin_vel0 = self.body_lin_vel[f0l]
         body_lin_vel1 = self.body_lin_vel[f1l]
         body_ang_vel0 = self.body_ang_vel[f0l]
