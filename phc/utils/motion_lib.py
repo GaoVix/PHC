@@ -294,6 +294,10 @@ class MotionLib():
 
     def get_motion_state(self, motion_ids, motion_times, offset=None):
 
+        print(motion_ids)
+        print('-------------------')
+        print(motion_times)
+
         motion_len = self._motion_lengths[motion_ids]
         num_frames = self._motion_num_frames[motion_ids]
         dt = self._motion_dt[motion_ids]
