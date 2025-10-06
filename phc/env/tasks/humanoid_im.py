@@ -954,6 +954,7 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
     def _compute_reward(self, actions):
         if MODIFY:
             return
+        return
         body_pos = self._rigid_body_pos
         body_rot = self._rigid_body_rot
         body_vel = self._rigid_body_vel

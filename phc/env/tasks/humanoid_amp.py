@@ -752,6 +752,7 @@ class HumanoidAMP(Humanoid):
         return
 
     def _compute_amp_observations(self, env_ids=None):
+        return
         key_body_pos = self._rigid_body_pos[:, self._key_body_ids, :]
         key_body_vel = self._rigid_body_vel[:, self._key_body_ids, :]
 
