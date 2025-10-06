@@ -259,7 +259,8 @@ class MotionLib():
             
             _motion_files.append(curr_file)
 
-
+        print(_motion_lengths)
+        print(_motion_fps)
         self._motion_lengths = torch.tensor(_motion_lengths, device=self._device, dtype=torch.float32)
         self._motion_fps = torch.tensor(_motion_fps, device=self._device, dtype=torch.float32)
         self._motion_dt = torch.tensor(_motion_dt, device=self._device, dtype=torch.float32)

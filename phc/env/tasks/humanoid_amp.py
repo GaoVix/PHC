@@ -48,7 +48,7 @@ from phc.env.util import gym_util
 from phc.utils.motion_lib_real import MotionLibReal
 from phc.utils.motion_lib_smpl import MotionLibSMPL 
 from phc.utils.motion_lib_base import FixHeightMode
-from phc.utils.motion_lib import MotionLib
+
 from easydict import EasyDict
 
 from isaacgym.torch_utils import *
