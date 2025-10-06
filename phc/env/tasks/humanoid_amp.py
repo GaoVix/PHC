@@ -336,48 +336,47 @@ class HumanoidAMP(Humanoid):
 
     def _load_motion(self, motion_train_file, motion_test_file=[]):
         assert (self._dof_offsets[-1] == self.num_dof)
-        # if self.humanoid_type in ["smpl", "smplh", "smplx"]:
-        #     motion_lib_cfg = EasyDict({
-        #         "motion_file": motion_file,
-        #         "device": torch.device("cpu"),
-        #         "fix_height": FixHeightMode.full_fix,
-        #         "min_length": -1,
-        #         "max_length": -1,
-        #         "im_eval": flags.im_eval,
-        #         "multi_thread": not self.cfg.disable_multiprocessing ,
-        #         "smpl_type": self.humanoid_type,
-        #         "randomrize_heading": True,
-        #         "device": self.device,
-        #         "min_length": self._min_motion_len, 
-        #         "step_dt": self.dt,
-        #     })
-        #     self._motion_lib = MotionLibSMPL(motion_lib_cfg=motion_lib_cfg)
-        #     self._motion_lib.load_motions(skeleton_trees=self.skeleton_trees, gender_betas=self.humanoid_shapes.cpu(), limb_weights=self.humanoid_limb_and_weights.cpu(), random_sample=not HACK_MOTION_SYNC)
-        # elif self.humanoid_type in ['h1', 'g1']:
-        #     motion_lib_cfg = EasyDict({
-        #         "motion_file": motion_train_file,
-        #         "device": torch.device("cpu"),
-        #         "fix_height": FixHeightMode.full_fix,
-        #         "min_length": self._min_motion_len,
-        #         "max_length": self.max_len,
-        #         "im_eval": flags.im_eval,
-        #         "multi_thread": True ,
-        #         "smpl_type": self.humanoid_type,
-        #         "randomrize_heading": True,
-        #         "device": self.device,
-        #         "robot": self.cfg.robot,
-        #         "step_dt": self.dt,
-        #     })
-        #     motion_eval_file = motion_train_file
-        #     self._motion_train_lib = MotionLibReal(motion_lib_cfg)
-        #     self._motion_eval_lib = MotionLibReal(motion_lib_cfg)
-        #     self._motion_lib = self._motion_train_lib
+        if self.humanoid_type in ["smpl", "smplh", "smplx"]:
+            motion_lib_cfg = EasyDict({
+                "motion_file": motion_file,
+                "device": torch.device("cpu"),
+                "fix_height": FixHeightMode.full_fix,
+                "min_length": -1,
+                "max_length": -1,
+                "im_eval": flags.im_eval,
+                "multi_thread": not self.cfg.disable_multiprocessing ,
+                "smpl_type": self.humanoid_type,
+                "randomrize_heading": True,
+                "device": self.device,
+                "min_length": self._min_motion_len, 
+                "step_dt": self.dt,
+            })
+            self._motion_lib = MotionLibSMPL(motion_lib_cfg=motion_lib_cfg)
+            self._motion_lib.load_motions(skeleton_trees=self.skeleton_trees, gender_betas=self.humanoid_shapes.cpu(), limb_weights=self.humanoid_limb_and_weights.cpu(), random_sample=not HACK_MOTION_SYNC)
+        elif self.humanoid_type in ['h1', 'g1']:
+            motion_lib_cfg = EasyDict({
+                "motion_file": motion_train_file,
+                "device": torch.device("cpu"),
+                "fix_height": FixHeightMode.full_fix,
+                "min_length": self._min_motion_len,
+                "max_length": self.max_len,
+                "im_eval": flags.im_eval,
+                "multi_thread": True ,
+                "smpl_type": self.humanoid_type,
+                "randomrize_heading": True,
+                "device": self.device,
+                "robot": self.cfg.robot,
+                "step_dt": self.dt,
+            })
+            motion_eval_file = motion_train_file
+            self._motion_train_lib = MotionLibReal(motion_lib_cfg)
+            self._motion_eval_lib = MotionLibReal(motion_lib_cfg)
+            self._motion_lib = self._motion_train_lib
             
-        #     self._motion_lib.load_motions(skeleton_trees=self.skeleton_trees, gender_betas=self.humanoid_shapes.cpu(), limb_weights=self.humanoid_limb_and_weights.cpu(), random_sample=not HACK_MOTION_SYNC)
-        self._motion_lib = MotionLib()
+            self._motion_lib.load_motions(skeleton_trees=self.skeleton_trees, gender_betas=self.humanoid_shapes.cpu(), limb_weights=self.humanoid_limb_and_weights.cpu(), random_sample=not HACK_MOTION_SYNC)
             
-        # else:
-        #     self._motion_lib = MotionLib(motion_file=motion_file, dof_body_ids=self._dof_body_ids, dof_offsets=self._dof_offsets, key_body_ids=self._key_body_ids.cpu().numpy(), device=self.device)
+        else:
+            self._motion_lib = MotionLib(motion_file=motion_file, dof_body_ids=self._dof_body_ids, dof_offsets=self._dof_offsets, key_body_ids=self._key_body_ids.cpu().numpy(), device=self.device)
 
         return
 
