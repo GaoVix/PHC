@@ -171,7 +171,7 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
     def collect_state(self):
         motion_ids = torch.zeros(self.num_envs, dtype=torch.long).to(self.device)
         motion_times = torch.zeros(self.num_envs, dtype=torch.float32).to(self.device)
-        motion_length = self._motion_lib._motion_lengths(motion_ids)
+        motion_length = self._motion_lib._motion_lengths[motion_ids]
         states = []
         while True:
             info = self._get_state_from_motionlib_cache(motion_ids, motion_times, self._global_offset)
