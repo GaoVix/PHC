@@ -176,7 +176,7 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         while True:
             info = self._get_state_from_motionlib_cache(motion_ids, motion_times, self._global_offset)
             motion_times += 0.02
-            if motion_times[0] >= motion_length[0]:
+            if motion_times[0] > motion_length[0]:
                 print('Finished Collecting!!!')
                 data = torch.stack(states)
                 torch.save(data, '/mnt/Exp_HDD/dataset/test/collected_states_gmr.pt')
