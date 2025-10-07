@@ -134,7 +134,7 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         self.play_index = 0
         self.data_coll = np.load("/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz", allow_pickle=True)
         self.init_state = np.load("/mnt/Exp_HDD/dataset/test/init_motion_res_data.npz", allow_pickle=True)
-        self.play_state()
+        # self.play_state()
         return
     
 
@@ -1131,10 +1131,6 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         else:
             return self.ref_motion_cache
         
-        print('-------------------')
-        print(motion_ids)
-        print(motion_times)
-        print('-------------------')
         motion_res = self._motion_lib.get_motion_state(motion_ids, motion_times, offset=offset)
 
         self.ref_motion_cache.update(motion_res)

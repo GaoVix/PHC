@@ -596,6 +596,7 @@ class HumanoidAMP(Humanoid):
         # if flags.fixed:
         #     x_grid, y_grid = torch.meshgrid(torch.arange(64), torch.arange(64))
         #     root_pos[:, 0], root_pos[:, 1] = x_grid.flatten()[env_ids] * 2, y_grid.flatten()[env_ids] * 2
+        self.root_pos[:,2] += 0.03
         self._set_env_state(env_ids=env_ids, root_pos=root_pos, root_rot=root_rot, dof_pos=dof_pos, root_vel=root_vel, root_ang_vel=root_ang_vel, dof_vel=dof_vel, rigid_body_pos=rb_pos, rigid_body_rot=rb_rot, rigid_body_vel=body_vel, rigid_body_ang_vel=body_ang_vel)
 
         self._reset_ref_env_ids = env_ids
