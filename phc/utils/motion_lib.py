@@ -187,7 +187,7 @@ class MotionLib():
         blend = blend.unsqueeze(-1)
 
         blend_exp = blend.unsqueeze(-1)
-
+        body_pos[:,:,2] += 0.03
         if offset is None:
             body_pos = (1.0 - blend_exp) * body_pos0 + blend_exp * body_pos1  # ZL: apply offset
         else:
