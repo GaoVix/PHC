@@ -34,8 +34,6 @@ def to_torch(tensor):
 class MotionLib():
 
     def __init__(self):
-        self._sim_fps = 30
-        print("SIM FPS:", self._sim_fps)
         self._device = 'cuda'
         self._load_motions('/mnt/Exp_HDD/dataset/test/new_data_0.015')
         # self.motion_ids = torch.arange(len(self._motions), dtype=torch.long, device=self._device)
@@ -56,12 +54,6 @@ class MotionLib():
         motion_ids = np.random.choice(m, size=n, replace=True)
 
         return motion_ids
-    
-    def get_motion_num_steps(self, motion_ids=None):
-        if motion_ids is None:
-            return (self._motion_num_frames * self._sim_fps / self._motion_fps).ceil().int()
-        else:
-            return (self._motion_num_frames[motion_ids] * self._sim_fps / self._motion_fps).ceil().int()
 
     def sample_time(self, motion_ids, truncate_time=None):
         n = len(motion_ids)
@@ -80,7 +72,7 @@ class MotionLib():
         if (truncate_time is not None):
             assert (truncate_time >= 0.0)
             motion_len -= truncate_time
-        curr_fps = 1 / 30
+        curr_fps = 1 / 50
         motion_time = ((phase * motion_len) / curr_fps).long() * curr_fps
 
         return motion_time
@@ -121,12 +113,8 @@ class MotionLib():
         self._motion_dt = torch.tensor(_motion_dt, device=self._device, dtype=torch.float32)
         self._motion_num_frames = torch.tensor(_motion_num_frames, device=self._device)
 
-        # self.root_pos = torch.cat([torch.as_tensor(m['root_pos']) for m in _motions], dim=0).float().to(self._device)
-        # self.root_rot = torch.cat([torch.as_tensor(m['root_rot']) for m in _motions], dim=0).float().to(self._device)
         self.dof_pos = torch.cat([torch.as_tensor(m['dof_pos']) for m in _motions], dim=0).float().to(self._device)
         self.dof_vel = torch.cat([torch.as_tensor(m['dof_vel']) for m in _motions], dim=0).float().to(self._device)
-        # self.root_ang_vel = torch.cat([torch.as_tensor(m['root_ang_vel']) for m in _motions], dim=0).float().to(self._device)
-        # self.root_lin_vel = torch.cat([torch.as_tensor(m['root_lin_vel']) for m in _motions], dim=0).float().to(self._device)
         self.body_pos = torch.cat([torch.as_tensor(m['body_pos']) for m in _motions], dim=0).float().to(self._device)
         self.body_quat = torch.cat([torch.as_tensor(m['body_quat']) for m in _motions], dim=0).float().to(self._device)
         self.body_lin_vel = torch.cat([torch.as_tensor(m['body_lin_vel']) for m in _motions], dim=0).float().to(self._device)
@@ -163,18 +151,10 @@ class MotionLib():
         f0l = frame_idx0 + self.length_starts[motion_ids]
         f1l = frame_idx1 + self.length_starts[motion_ids]
 
-        # root_pos0 = self.root_pos[f0l]
-        # root_pos1 = self.root_pos[f1l]
-        # root_rot0 = self.root_rot[f0l]
-        # root_rot1 = self.root_rot[f1l]
         dof_pos0 = self.dof_pos[f0l]
         dof_pos1 = self.dof_pos[f1l]
         dof_vel0 = self.dof_vel[f0l]
         dof_vel1 = self.dof_vel[f1l]
-        # root_lin_vel0 = self.root_lin_vel[f0l]
-        # root_lin_vel1 = self.root_lin_vel[f1l]
-        # root_ang_vel0 = self.root_ang_vel[f0l]
-        # root_ang_vel1 = self.root_ang_vel[f1l]
         body_pos0 = self.body_pos[f0l]
         body_pos1 = self.body_pos[f1l]
         body_rot0 = self.body_quat[f0l]
