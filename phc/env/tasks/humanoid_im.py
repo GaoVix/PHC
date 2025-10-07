@@ -166,35 +166,24 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
                 self.gym.fetch_results(self.sim, True)
             self._refresh_sim_tensors()
             self.render()
-
-    def play_double_state(self):
+    
+    def collect_state(self):
         motion_ids = torch.zeros(self.num_envs, dtype=torch.long).to(self.device)
         motion_times = torch.zeros(self.num_envs, dtype=torch.float32).to(self.device)
+        motion_length = self._motion_lib._motion_lengths(motion_ids)
+        states = []
         while True:
             info = self._get_state_from_motionlib_cache(motion_ids, motion_times, self._global_offset)
             motion_times += 0.02
+            if motion_times[0] >= motion_length[0]:
+                print('Finished Collecting!!!')
+                data = torch.stack(states)
+                torch.save(data, '/mnt/Exp_HDD/dataset/test/collected_states_gmr.pt')
+                sys.exit()
 
-            env_ids = to_torch(np.arange(self.num_envs), device=self.device, dtype=torch.long)
-
-            self._set_env_state(
-                env_ids=env_ids,
-                root_pos=info['root_pos'],
-                root_rot=info['root_rot'],
-                dof_pos=info['dof_pos'],
-                root_vel=info['root_vel'],
-                root_ang_vel=info['root_ang_vel'],
-                dof_vel=info['dof_vel'],
-                rigid_body_pos=info['rg_pos'],
-                rigid_body_rot=info['rb_rot'],
-                rigid_body_vel=info['body_vel'],
-                rigid_body_ang_vel=info['body_ang_vel']
-            )
-            self._reset_env_tensors(env_ids)
-            self.gym.simulate(self.sim)
-            if self.device == 'cpu':
-                self.gym.fetch_results(self.sim, True)
-            self._refresh_sim_tensors()
-            self.render()
+            state = torch.cat([info['root_pos'][0], info['root_rot'][0], info['dof_pos'][0]])
+            state_cpu = state.detach().cpu()
+            states.append(state_cpu)
     
     
     def pause_func(self, action):
