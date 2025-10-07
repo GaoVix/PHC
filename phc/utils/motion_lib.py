@@ -139,7 +139,7 @@ class MotionLib():
         assert self.body_ang_vel.shape[-2] == 38
         # self.body_ang_vel = torch.cat([quat_rotate(torch.as_tensor(m['body_quat']), torch.as_tensor(m['body_ang_vel'])) for m in _motions], dim=0).float().to(self._device)
 
-        self.body_pos[:,:,2] += 0.03
+        # self.body_pos[:,:,2] += 0.03
 
         self.num_motions = len(_motions)
         lengths = self._motion_num_frames
