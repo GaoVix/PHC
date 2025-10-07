@@ -37,7 +37,7 @@ class MotionLib():
         self._sim_fps = 30
         print("SIM FPS:", self._sim_fps)
         self._device = 'cuda'
-        self._load_motions('/mnt/Exp_HDD/dataset/test/new_data')
+        self._load_motions('/mnt/Exp_HDD/dataset/test/new_data_0.015')
         # self.motion_ids = torch.arange(len(self._motions), dtype=torch.long, device=self._device)
 
         return
