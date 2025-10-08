@@ -145,9 +145,9 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         motion_times = torch.zeros(self.num_envs, dtype=torch.float32).to(self.device)
         low_val = 5.0
         while True:
-            # if (self._global_offset[:, 2] != 0).any().item():
-            #     print(self._global_offset[:, 2])
-            #     print('------------------------------------')
+            if (self._global_offset[:, 2] != 0).any().item():
+                print(self._global_offset[:, 2])
+                print('------------------------------------')
             info = self._get_state_from_motionlib_cache(motion_ids, motion_times, self._global_offset)
 
             lowest = (info['rg_pos'][..., 2]).min()
