@@ -173,8 +173,17 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         motion_times = torch.zeros(self.num_envs, dtype=torch.float32).to(self.device)
         motion_length = self._motion_lib._motion_lengths[motion_ids]
         states = []
+        low_val = 0.0
         while True:
+            if (self._global_offset[:, 2] != 0).any().item():
+                print(self._global_offset[:, 2])
+                print('-------------------------------------')
+
             info = self._get_state_from_motionlib_cache(motion_ids, motion_times, self._global_offset)
+            lowest = info['rb_pos'][..., 2]
+            if lowest < low_val:
+                low_val = lowest
+                print('curr lower value: ', low_val)
             motion_times += 0.02
             if motion_times[0] > motion_length[0]:
                 print('Finished Collecting!!!')
