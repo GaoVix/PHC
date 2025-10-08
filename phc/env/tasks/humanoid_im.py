@@ -177,7 +177,7 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         while True:
             if (self._global_offset[:, 2] != 0).any().item():
                 print(self._global_offset[:, 2])
-                print('-------------------------------------')
+                print('------------------------------------')
 
             info = self._get_state_from_motionlib_cache(motion_ids, motion_times, self._global_offset)
             lowest = info['rb_pos'][..., 2]
