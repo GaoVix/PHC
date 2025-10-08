@@ -46,6 +46,12 @@ class MotionLib():
     def get_motion(self, motion_id):
         return self._motions[motion_id]
 
+    def get_motion_length(self, motion_ids=None):
+        if motion_ids is None:
+            return self._motion_lengths
+        else:
+            return self._motion_lengths[motion_ids]
+
     def sample_motions(self, n):
         m = self.num_motions
         # motion_ids = np.random.choice(m, size=n, replace=True)
