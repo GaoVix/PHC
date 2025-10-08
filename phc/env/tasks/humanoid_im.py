@@ -145,6 +145,7 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         motion_times = torch.zeros(self.num_envs, dtype=torch.float32).to(self.device)
         low_val = 5.0
         while True:
+            print(self._global_offset.shape)
             if (self._global_offset[:, 2] != 0).any().item():
                 print(self._global_offset[:, 2])
                 print('------------------------------------')
