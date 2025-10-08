@@ -186,8 +186,6 @@ class MotionLibReal(MotionLibBase):
                 
             del curr_motion
             
-        print(self._device)
-        raise RuntimeError
         self._motion_lengths = torch.tensor(_motion_lengths, device=self._device, dtype=torch.float32)
         self._motion_fps = torch.tensor(_motion_fps, device=self._device, dtype=torch.float32)
         self._motion_bodies = torch.stack(_motion_bodies).to(self._device).type(torch.float32)
