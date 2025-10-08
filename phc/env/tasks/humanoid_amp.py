@@ -654,7 +654,6 @@ class HumanoidAMP(Humanoid):
         return
 
     def _init_amp_obs_ref(self, env_ids, motion_ids, motion_times):
-        return
         if MODIFY:
             return
         dt = self.dt
@@ -754,7 +753,6 @@ class HumanoidAMP(Humanoid):
         return
 
     def _compute_amp_observations(self, env_ids=None):
-        return
         key_body_pos = self._rigid_body_pos[:, self._key_body_ids, :]
         key_body_vel = self._rigid_body_vel[:, self._key_body_ids, :]
 
@@ -792,7 +790,6 @@ class HumanoidAMP(Humanoid):
         return
     
     def _compute_amp_observations_from_state(self, root_pos, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos, key_body_vels, smpl_params, limb_weight_params, dof_subset, local_root_obs, root_height_obs, has_dof_subset, has_shape_obs_disc, has_limb_weight_obs, upright):
-        return
         if self.amp_obs_v == 1:
             if self.humanoid_type in ["smpl", "smplh", "smplx"]:
                 smpl_params = smpl_params[:, :-6]
