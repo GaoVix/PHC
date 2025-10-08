@@ -48,7 +48,8 @@ class MotionLib():
 
     def sample_motions(self, n):
         m = self.num_motions
-        motion_ids = np.random.choice(m, size=n, replace=True)
+        # motion_ids = np.random.choice(m, size=n, replace=True)
+        motion_ids = torch.randint(0, self.num_motions, (n,), device=self._device)
 
         return motion_ids
 
