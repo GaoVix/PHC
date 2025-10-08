@@ -1772,6 +1772,10 @@ def compute_imitation_reward(root_pos, root_rot, body_pos, body_rot, body_vel, b
     # type: (Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor,Tensor, Tensor, Dict[str, float]) -> Tuple[Tensor, Tensor]
     k_pos, k_rot, k_vel, k_ang_vel = rwd_specs["k_pos"], rwd_specs["k_rot"], rwd_specs["k_vel"], rwd_specs["k_ang_vel"]
     w_pos, w_rot, w_vel, w_ang_vel = rwd_specs["w_pos"], rwd_specs["w_rot"], rwd_specs["w_vel"], rwd_specs["w_ang_vel"]
+    print(ref_body_pos.shape)
+    print('----------------------------------')
+    print(body_pos.shape)
+
 
     # body position reward
     diff_global_body_pos = ref_body_pos - body_pos
