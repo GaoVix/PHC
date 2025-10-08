@@ -183,9 +183,13 @@ class MotionLib():
         dof_pos = (1.0 - blend) * dof_pos0 + blend * dof_pos1
         body_rot = torch_utils.slerp(body_rot0, body_rot1, blend_exp)
 
+        extend_body_parent_ids = torch.tensor([0], device=self._device)
+        extend_body_pos_in_parent = torch.tensor([[0.0, 0.0, 0.4]], device=self._device)
+        extend_curr_pos = torch_utils.my_quat_rotate(body_rot[:, extend_body_parent_ids].reshape(-1, 4), extend_body_pos_in_parent.reshape(-1, 3)).view(body_rot.shape[0], -1, 3) + body_pos[:, extend_body_parent_ids]
+        body_pos_t = torch.cat([body_pos, extend_curr_pos], dim=1)
+        body_rot_t = torch.cat([body_rot, body_rot[:, extend_body_parent_ids]], dim=1)
+
         return_dict = {}
-    
-        
         return_dict.update({
             "root_pos": body_pos[..., 0, :].clone(),
             "root_rot": body_rot[..., 0, :].clone(),
@@ -202,8 +206,8 @@ class MotionLib():
             "body_vel": body_lin_vel,
             "body_ang_vel": body_ang_vel,
             
-            "rg_pos_t": body_pos,
-            "rg_rot_t": body_rot,
+            "rg_pos_t": body_pos_t,
+            "rg_rot_t": body_rot_t,
             "body_vel_t": body_lin_vel,
             "body_ang_vel_t": body_ang_vel,
         })
