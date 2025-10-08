@@ -134,7 +134,8 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         self.play_index = 0
         self.data_coll = np.load("/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz", allow_pickle=True)
         self.init_state = np.load("/mnt/Exp_HDD/dataset/test/init_motion_res_data.npz", allow_pickle=True)
-        self.collect_state()
+        # self.collect_state()
+        self.play_state()
         return
     
 
@@ -142,8 +143,17 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
 
         motion_ids = torch.zeros(self.num_envs, dtype=torch.long).to(self.device)
         motion_times = torch.zeros(self.num_envs, dtype=torch.float32).to(self.device)
+        low_val = 5.0
         while True:
+            if (self._global_offset[:, 2] != 0).any().item():
+                print(self._global_offset[:, 2])
+                print('------------------------------------')
             info = self._get_state_from_motionlib_cache(motion_ids, motion_times, self._global_offset)
+
+            lowest = (info['rg_pos'][..., 2]).min()
+            if lowest < low_val:
+                low_val = lowest
+                print('curr lower value: ', low_val)
             motion_times += 0.02
 
             env_ids = to_torch(np.arange(self.num_envs), device=self.device, dtype=torch.long)
