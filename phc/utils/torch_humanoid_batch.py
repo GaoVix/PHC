@@ -346,54 +346,152 @@ class Humanoid_Batch:
         self.body_to_mesh = body_to_mesh
         self.mesh_to_body = mesh_to_body
 
-    def mesh_fk(self, pose = None, trans = None):
-        """
-        Load the mesh from the XML file and merge them into the humanoid based on the current pose.
-        """
+    # def mesh_fk(self, pose = None, trans = None):
+    #     """
+    #     Load the mesh from the XML file and merge them into the humanoid based on the current pose.
+    #     """
+    #     if pose is None:
+    #         fk_res = self.fk_batch(torch.zeros(1, 1, len(self.body_names_augment), 3), torch.zeros(1, 1, 3))
+    #     else:
+    #         fk_res = self.fk_batch(pose, trans)
+    #
+    #     g_trans = fk_res.global_translation.squeeze()
+    #     g_rot = fk_res.global_rotation_mat.squeeze()
+    #     geoms = self.tree.find("worldbody").findall(".//geom")
+    #     joined_mesh_obj = []
+    #     for geom in geoms:
+    #         if 'mesh' not in geom.attrib:
+    #             continue
+    #         parent_name = geom.attrib['mesh']
+    #
+    #
+    #         k = self.mesh_to_body[geom].attrib['name']
+    #         mesh_names = self.body_to_mesh[k]
+    #         body_idx = self.body_names.index(k)
+    #
+    #         body_trans = g_trans[body_idx].numpy().copy()
+    #         body_rot = g_rot[body_idx].numpy().copy()
+    #         for mesh_name in mesh_names:
+    #             mesh_obj = copy.deepcopy(self.mesh_dict[mesh_name])
+    #             if k in self.geom_transform:
+    #                 pos = self.geom_transform[k]['pos']
+    #                 quat = self.geom_transform[k]['quat']
+    #                 body_trans = body_trans + body_rot @ pos
+    #                 global_rot =  (body_rot   @ sRot.from_quat(quat[[1, 2, 3, 0]]).as_matrix()).T
+    #             else:
+    #                 global_rot = body_rot.T
+    #             mesh_obj.rotate(global_rot.T, center=(0, 0, 0))
+    #             mesh_obj.translate(body_trans)
+    #             joined_mesh_obj.append(mesh_obj)
+    #
+    #     # Merge all meshes into a single mesh
+    #     merged_mesh = joined_mesh_obj[0]
+    #     for mesh in joined_mesh_obj[1:]:
+    #         merged_mesh += mesh
+    #
+    #     # Save the merged mesh to a file
+    #     # merged_mesh.compute_vertex_normals()
+    #     # o3d.io.write_triangle_mesh(f"data/{self.cfg.humanoid_type}/combined_{self.cfg.humanoid_type}.stl", merged_mesh)
+    #     return merged_mesh
+
+    def mesh_fk(self, pose=None, trans=None, return_info=False):
         if pose is None:
-            fk_res = self.fk_batch(torch.zeros(1, 1, len(self.body_names_augment), 3), torch.zeros(1, 1, 3))
+            fk_res = self.fk_batch(torch.zeros(1, 1, len(self.body_names_augment), 3),
+                                   torch.zeros(1, 1, 3))
         else:
             fk_res = self.fk_batch(pose, trans)
 
         g_trans = fk_res.global_translation.squeeze()
         g_rot = fk_res.global_rotation_mat.squeeze()
         geoms = self.tree.find("worldbody").findall(".//geom")
+
         joined_mesh_obj = []
+        per_part_stats = []  # 记录每个子 mesh 的最低点信息
+
         for geom in geoms:
             if 'mesh' not in geom.attrib:
                 continue
-            parent_name = geom.attrib['mesh']
 
-
-            k = self.mesh_to_body[geom].attrib['name']
-            mesh_names = self.body_to_mesh[k]
+            k = self.mesh_to_body[geom].attrib['name']  # body 名
+            mesh_names = self.body_to_mesh[k]  # 这个 body 下的所有 mesh 名
             body_idx = self.body_names.index(k)
 
             body_trans = g_trans[body_idx].numpy().copy()
             body_rot = g_rot[body_idx].numpy().copy()
+
             for mesh_name in mesh_names:
                 mesh_obj = copy.deepcopy(self.mesh_dict[mesh_name])
+
                 if k in self.geom_transform:
                     pos = self.geom_transform[k]['pos']
                     quat = self.geom_transform[k]['quat']
                     body_trans = body_trans + body_rot @ pos
-                    global_rot =  (body_rot   @ sRot.from_quat(quat[[1, 2, 3, 0]]).as_matrix()).T
+                    global_rot = (body_rot @ sRot.from_quat(quat[[1, 2, 3, 0]]).as_matrix()).T
                 else:
                     global_rot = body_rot.T
+
                 mesh_obj.rotate(global_rot.T, center=(0, 0, 0))
                 mesh_obj.translate(body_trans)
+
+                # === 统计该子 mesh 的最低顶点 ===
+                V = np.asarray(mesh_obj.vertices)
+                if V.size > 0:
+                    z = V[:, 2]
+                    v_local = int(np.argmin(z))
+                    zmin = float(z[v_local])
+                    v_pos = V[v_local].copy()
+                else:
+                    v_local = -1
+                    zmin = float('inf')
+                    v_pos = None
+
+                per_part_stats.append({
+                    "mesh_name": mesh_name,  # 子 mesh 名
+                    "body_name": k,  # 所属 body
+                    "zmin": zmin,  # 最低 z
+                    "v_local": v_local,  # 在该子 mesh 内的顶点索引
+                    "v_pos": v_pos,  # 世界坐标下的最低点位置
+                })
+
+                if np.isfinite(zmin):
+                    logging.info(
+                        f"[mesh_fk] 子mesh最低点: mesh={mesh_name}, body={k}, zmin={zmin:.6f}, "
+                        f"v_local={v_local}, v_pos={v_pos}"
+                    )
+                else:
+                    logging.info(f"[mesh_fk] mesh={mesh_name}, body={k} 没有有效顶点。")
+
                 joined_mesh_obj.append(mesh_obj)
 
-        # Merge all meshes into a single mesh
-        merged_mesh = joined_mesh_obj[0]
-        for mesh in joined_mesh_obj[1:]:
-            merged_mesh += mesh
+        # 合并
+        if not joined_mesh_obj:
+            merged_mesh = o3d.geometry.TriangleMesh()
+            best_info = None
+        else:
+            merged_mesh = joined_mesh_obj[0]
+            for mesh in joined_mesh_obj[1:]:
+                merged_mesh += mesh
 
-        # Save the merged mesh to a file
-        # merged_mesh.compute_vertex_normals()
-        # o3d.io.write_triangle_mesh(f"data/{self.cfg.humanoid_type}/combined_{self.cfg.humanoid_type}.stl", merged_mesh)
-        return merged_mesh
+            # === 找到全局最低的那个子 mesh 并打印 ===
+            best_info = min(per_part_stats, key=lambda s: s["zmin"]) if per_part_stats else None
+            if best_info is not None and np.isfinite(best_info["zmin"]):
+                logging.info(
+                    f"[mesh_fk] 最低顶点: mesh={best_info['mesh_name']}, "
+                    f"body={best_info['body_name']}, zmin={best_info['zmin']:.6f}, "
+                    f"v_local={best_info['v_local']}, v_pos={best_info['v_pos']}"
+                )
+            else:
+                logging.info("[mesh_fk] 未找到有效的顶点。")
 
+            if np.isfinite(zmin):
+                logging.info(
+                    f"[mesh_fk] 子mesh最低点: mesh={mesh_name}, body={k}, zmin={zmin:.6f}, "
+                    f"v_local={v_local}, v_pos={v_pos}"
+                )
+            else:
+                logging.info(f"[mesh_fk] mesh={mesh_name}, body={k} 没有有效顶点。")
+
+        return (merged_mesh, best_info, per_part_stats) if return_info else merged_mesh
 
     def _parse_default_classes(self, root):
         """Parse MuJoCo default classes to extract joint properties like axis."""
