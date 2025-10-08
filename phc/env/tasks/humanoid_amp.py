@@ -1173,11 +1173,10 @@ def build_amp_observations_robot(root_pos, root_rot, root_vel, root_ang_vel, dof
 
     dof_obs = dof_pos
         
-    # obs_list = []
-    # if root_height_obs:
-    #     obs_list.append(root_h)
-    # obs_list += [root_rot_obs, local_root_vel, local_root_ang_vel, dof_obs, dof_vel, flat_local_key_pos]
-    obs_list = [root_h, root_rot_obs, local_root_vel, local_root_ang_vel, dof_obs, dof_vel, flat_local_key_pos]
+    obs_list = []
+    if root_height_obs:
+        obs_list.append(root_h)
+    obs_list += [root_rot_obs, local_root_vel, local_root_ang_vel, dof_obs, dof_vel, flat_local_key_pos]
     # 1? + 6 + 3 + 3 + 114 + 57 + 12
     if has_shape_obs_disc:
         obs_list.append(shape_params)
