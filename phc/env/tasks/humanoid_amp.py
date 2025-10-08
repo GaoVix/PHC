@@ -38,7 +38,7 @@ from matplotlib.pyplot import flag
 import numpy as np
 import torch
 from torch import Tensor
-from typing import Dict, Optional
+from typing import Dict, Optiona, List
 
 from isaacgym import gymapi
 from isaacgym import gymtorch
@@ -1173,7 +1173,8 @@ def build_amp_observations_robot(root_pos, root_rot, root_vel, root_ang_vel, dof
 
     dof_obs = dof_pos
         
-    obs_list = []
+    # obs_list = []
+    obs_list = torch.jit.annotate(List[Tensor], [])
     if root_height_obs:
         obs_list.append(root_h)
     obs_list += [root_rot_obs, local_root_vel, local_root_ang_vel, dof_obs, dof_vel, flat_local_key_pos]
