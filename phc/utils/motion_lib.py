@@ -39,9 +39,6 @@ class MotionLib():
         # self.motion_ids = torch.arange(len(self._motions), dtype=torch.long, device=self._device)
 
         return
-    
-    def num_motions(self):
-        return len(self._motions)
 
     def get_total_length(self):
         return sum(self._motion_lengths)
@@ -50,7 +47,7 @@ class MotionLib():
         return self._motions[motion_id]
 
     def sample_motions(self, n):
-        m = self.num_motions()
+        m = self.num_motions
         motion_ids = np.random.choice(m, size=n, replace=True)
 
         return motion_ids
