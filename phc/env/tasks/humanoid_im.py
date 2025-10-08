@@ -1556,10 +1556,6 @@ def compute_imitation_observations_v6(root_pos, root_rot, body_pos, body_rot, bo
     # Future tracks in this obs will not contain future diffs.
     obs = []
     B, J, _ = body_pos.shape
-    # print('----------------------------------------')
-    # print('body_obs.shape')
-    # print(body_pos.shape)
-    # print('----------------------------------------')
 
     if not upright:
         root_rot = remove_base_rot(root_rot)
