@@ -69,6 +69,7 @@ class MotionLibReal(MotionLibBase):
             
             mesh_obj = mesh_parsers.mesh_fk(pose_aa[None, :1], trans[None, :1])
             height_diff = np.asarray(mesh_obj.vertices)[..., 2].min()
+            print(height_diff)
             trans[..., 2] -= height_diff
             
             return trans, height_diff
