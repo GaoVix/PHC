@@ -150,7 +150,7 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
                 print('------------------------------------')
             info = self._get_state_from_motionlib_cache(motion_ids, motion_times, self._global_offset)
 
-            lowest = (info['rg_pos'][:, 12, 2]).min()
+            lowest = (info['rg_pos'][:, 6, 2]).min()
             if lowest < low_val:
                 low_val = lowest
                 print('curr lower value: ', low_val)
