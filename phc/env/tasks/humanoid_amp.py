@@ -797,7 +797,8 @@ class HumanoidAMP(Humanoid):
             elif self.humanoid_type in ['h1', 'g1',]:
                 if has_shape_obs_disc or has_limb_weight_obs:
                     raise RuntimeError
-                return build_amp_observations_robot(root_pos, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos, smpl_params, limb_weight_params, dof_subset, local_root_obs, root_height_obs, has_dof_subset, has_shape_obs_disc, has_limb_weight_obs, upright)
+                # return build_amp_observations_robot(root_pos, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos, smpl_params, limb_weight_params, dof_subset, local_root_obs, root_height_obs, has_dof_subset, has_shape_obs_disc, has_limb_weight_obs, upright)
+                return build_amp_observations_robot(root_pos, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos)
         elif self.amp_obs_v == 2:
             return build_amp_observations_smpl_v2(root_pos, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos, key_body_vels, smpl_params, limb_weight_params, dof_subset, local_root_obs, root_height_obs, has_dof_subset, has_shape_obs_disc, has_limb_weight_obs, upright)
 
@@ -1189,18 +1190,13 @@ def build_amp_observations_smpl_v2(root_pos, root_rot, root_vel, root_ang_vel, d
 #     return obs
 
 @torch.jit.script
-def build_amp_observations_robot(root_pos, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos, shape_params, limb_weight_params, dof_subset, local_root_obs, root_height_obs, has_dof_subset, has_shape_obs_disc, has_limb_weight_obs, upright):
-    # type: (Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, bool, bool, bool, bool, bool, bool) -> Tensor
+def build_amp_observations_robot(root_pos, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos):
+    # type: (Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor) -> Tensor
     B, N = root_pos.shape
     root_h = root_pos[:, 2:3]
-    if not upright:
-        root_rot = remove_base_rot(root_rot)
     heading_rot_inv = torch_utils.calc_heading_quat_inv(root_rot)
 
-    if (local_root_obs):
-        root_rot_obs = quat_mul(heading_rot_inv, root_rot)
-    else:
-        root_rot_obs = root_rot
+    root_rot_obs = root_rot
 
     root_rot_obs = torch_utils.quat_to_tan_norm(root_rot_obs)
 
@@ -1219,21 +1215,10 @@ def build_amp_observations_robot(root_pos, root_rot, root_vel, root_ang_vel, dof
 
     dof_obs = dof_pos
         
-    obs_list = torch.jit.annotate(List[Tensor], [])
-    if root_height_obs:
-        obs_list.append(root_h)
-    # obs_list += [root_rot_obs, local_root_vel, local_root_ang_vel, dof_obs, dof_vel, flat_local_key_pos]
-    obs_list.append(root_rot_obs)
-    obs_list.append(local_root_vel)
-    obs_list.append(local_root_ang_vel)
-    obs_list.append(dof_obs)
-    obs_list.append(dof_vel)
-    obs_list.append(flat_local_key_pos)
+    obs_list = []
+    obs_list.append(root_h)
+    obs_list += [root_rot_obs, local_root_vel, local_root_ang_vel, dof_obs, dof_vel, flat_local_key_pos]
     # 1? + 6 + 3 + 3 + 114 + 57 + 12
-    if has_shape_obs_disc:
-        obs_list.append(shape_params)
-    if has_limb_weight_obs:
-        obs_list.append(limb_weight_params)
     obs = torch.cat(obs_list, dim=-1)
     
     return obs
