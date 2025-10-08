@@ -38,7 +38,7 @@ from matplotlib.pyplot import flag
 import numpy as np
 import torch
 from torch import Tensor
-from typing import Dict, Optiona, List
+from typing import Dict, Optional, List
 
 from isaacgym import gymapi
 from isaacgym import gymtorch
