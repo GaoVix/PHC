@@ -1144,6 +1144,50 @@ def build_amp_observations_smpl_v2(root_pos, root_rot, root_vel, root_ang_vel, d
     return obs
 
 
+# @torch.jit.script
+# def build_amp_observations_robot(root_pos, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos, shape_params, limb_weight_params, dof_subset, local_root_obs, root_height_obs, has_dof_subset, has_shape_obs_disc, has_limb_weight_obs, upright):
+#     # type: (Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, bool, bool, bool, bool, bool, bool) -> Tensor
+#     B, N = root_pos.shape
+#     root_h = root_pos[:, 2:3]
+#     if not upright:
+#         root_rot = remove_base_rot(root_rot)
+#     heading_rot_inv = torch_utils.calc_heading_quat_inv(root_rot)
+
+#     if (local_root_obs):
+#         root_rot_obs = quat_mul(heading_rot_inv, root_rot)
+#     else:
+#         root_rot_obs = root_rot
+
+#     root_rot_obs = torch_utils.quat_to_tan_norm(root_rot_obs)
+
+#     local_root_vel = torch_utils.my_quat_rotate(heading_rot_inv, root_vel)
+#     local_root_ang_vel = torch_utils.my_quat_rotate(heading_rot_inv, root_ang_vel)
+
+#     root_pos_expand = root_pos.unsqueeze(-2)
+#     local_key_body_pos = key_body_pos - root_pos_expand
+
+#     heading_rot_expand = heading_rot_inv.unsqueeze(-2)
+#     heading_rot_expand = heading_rot_expand.repeat((1, local_key_body_pos.shape[1], 1))
+#     flat_end_pos = local_key_body_pos.view(local_key_body_pos.shape[0] * local_key_body_pos.shape[1], local_key_body_pos.shape[2])
+#     flat_heading_rot = heading_rot_expand.view(heading_rot_expand.shape[0] * heading_rot_expand.shape[1], heading_rot_expand.shape[2])
+#     local_end_pos = torch_utils.my_quat_rotate(flat_heading_rot, flat_end_pos)
+#     flat_local_key_pos = local_end_pos.view(local_key_body_pos.shape[0], local_key_body_pos.shape[1] * local_key_body_pos.shape[2])
+
+#     dof_obs = dof_pos
+        
+#     obs_list = []
+#     if root_height_obs:
+#         obs_list.append(root_h)
+#     obs_list += [root_rot_obs, local_root_vel, local_root_ang_vel, dof_obs, dof_vel, flat_local_key_pos]
+#     # 1? + 6 + 3 + 3 + 114 + 57 + 12
+#     if has_shape_obs_disc:
+#         obs_list.append(shape_params)
+#     if has_limb_weight_obs:
+#         obs_list.append(limb_weight_params)
+#     obs = torch.cat(obs_list, dim=-1)
+    
+#     return obs
+
 @torch.jit.script
 def build_amp_observations_robot(root_pos, root_rot, root_vel, root_ang_vel, dof_pos, dof_vel, key_body_pos, shape_params, limb_weight_params, dof_subset, local_root_obs, root_height_obs, has_dof_subset, has_shape_obs_disc, has_limb_weight_obs, upright):
     # type: (Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, bool, bool, bool, bool, bool, bool) -> Tensor
@@ -1175,11 +1219,16 @@ def build_amp_observations_robot(root_pos, root_rot, root_vel, root_ang_vel, dof
 
     dof_obs = dof_pos
         
-    # obs_list = []
-    obs_list = torch.jit.annotate(List[Tensor], [])
+    obs_list = []
     if root_height_obs:
         obs_list.append(root_h)
-    obs_list += [root_rot_obs, local_root_vel, local_root_ang_vel, dof_obs, dof_vel, flat_local_key_pos]
+    # obs_list += [root_rot_obs, local_root_vel, local_root_ang_vel, dof_obs, dof_vel, flat_local_key_pos]
+    obs_list.append(root_rot_obs)
+    obs_list.append(local_root_vel)
+    obs_list.append(local_root_ang_vel)
+    obs_list.append(dof_obs)
+    obs_list.append(dof_vel)
+    obs_list.append(flat_local_key_pos)
     # 1? + 6 + 3 + 3 + 114 + 57 + 12
     if has_shape_obs_disc:
         obs_list.append(shape_params)
@@ -1188,5 +1237,4 @@ def build_amp_observations_robot(root_pos, root_rot, root_vel, root_ang_vel, dof
     obs = torch.cat(obs_list, dim=-1)
     
     return obs
-
 
