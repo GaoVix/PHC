@@ -173,7 +173,7 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         motion_times = torch.zeros(self.num_envs, dtype=torch.float32).to(self.device)
         motion_length = self._motion_lib._motion_lengths[motion_ids]
         states = []
-        low_val = 0.0
+        low_val = 5.0
         while True:
             if (self._global_offset[:, 2] != 0).any().item():
                 print(self._global_offset[:, 2])
