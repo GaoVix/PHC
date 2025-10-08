@@ -38,7 +38,7 @@ def to_torch(x, dtype=torch.float, device='cuda:0', requires_grad=False):
 
 MODIFY = False
 DISABLE_RESET = False
-USE_GMR_DATA = False
+USE_GMR_DATA = True
 
 
 class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
