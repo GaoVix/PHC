@@ -535,64 +535,6 @@ class HumanoidAMP(Humanoid):
         # print('raising for debug')
         # root_pos[..., 2] += 0.5
 
-        # if MODIFY:
-        #     while True:
-        #         print(f"curr play {self.play_index}/{len(self.data_coll['dof_pos'])}")
-        #         env_ids = torch.from_numpy(np.arange(self.num_envs)).to(self.device)
-        #         dof_pos = self.data_coll["dof_pos"][self.play_index]
-        #         dof_vel = self.data_coll["dof_vel"][self.play_index]
-        #         rb_pos = self.data_coll["ref_rb_pos"][self.play_index]
-        #         rb_rot = self.data_coll["ref_rb_rot"][self.play_index]
-        #         body_vel = self.data_coll["ref_body_vel"][self.play_index]
-        #         body_ang_vel = self.data_coll["ref_body_ang_vel"][self.play_index]
-        #         root_pos = rb_pos[:,0]
-        #         root_rot = rb_rot[:,0]
-        #         root_vel = body_vel[:,0]
-        #         root_ang_vel = body_ang_vel[:,0]
-        #         self.play_index += 1
-        #         if self.play_index == len(self.data_coll['dof_pos']):
-        #             self.play_index = 0
-        #         self._set_env_state(env_ids=env_ids, root_pos=root_pos, root_rot=root_rot, 
-        #                             dof_pos=dof_pos, root_vel=root_vel, root_ang_vel=root_ang_vel, 
-        #                             dof_vel=dof_vel, rigid_body_pos=rb_pos, rigid_body_rot=rb_rot, 
-        #                             rigid_body_vel=body_vel, rigid_body_ang_vel=body_ang_vel)
-        #         self._reset_env_tensors(env_ids)
-        #         self.gym.simulate(self.sim)
-        #         if self.device == 'cpu':
-        #             self.gym.fetch_results(self.sim, True)
-        #         self._refresh_sim_tensors()
-        #         self.render()
-
-
-                # print(f"curr play {self.play_index}/{len(self.obs_state_action)}")
-                # info = self.obs_state_action[self.play_index]
-                # self.play_index += 1
-                # if self.play_index == len(self.obs_state_action):
-                #     print("Play Task Finished!")
-                #     sys.exit()
-                # env_ids = torch.from_numpy(np.arange(self.num_envs)).to(self.device)
-                # self._set_env_state(
-                #     env_ids = env_ids,
-                #     root_pos = torch.from_numpy(info['body_pos'][:,0,:]).to(self.device),
-                #     root_rot = torch.from_numpy(info['body_rot'][:,0,:]).to(self.device),
-                #     dof_pos = torch.from_numpy(info['dof_pos']).to(self.device),
-                #     root_vel = torch.from_numpy(info['body_vel'][:,0,:]).to(self.device),
-                #     root_ang_vel = torch.from_numpy(info['body_ang_vel'][:,0,:]).to(self.device),
-                #     dof_vel = torch.from_numpy(info['dof_vel']).to(self.device),
-                #     rigid_body_pos = torch.from_numpy(info['body_pos']).to(self.device),
-                #     rigid_body_rot = torch.from_numpy(info['body_rot']).to(self.device),
-                #     rigid_body_vel = torch.from_numpy(info['body_vel']).to(self.device),
-                #     rigid_body_ang_vel = torch.from_numpy(info['body_ang_vel']).to(self.device)
-                # )
-                # self._reset_env_tensors(env_ids)
-                # self.gym.simulate(self.sim)
-                # if self.device == 'cpu':
-                #     self.gym.fetch_results(self.sim, True)
-                # self._refresh_sim_tensors()
-                # self.render()
-
-
-
         # if flags.fixed:
         #     x_grid, y_grid = torch.meshgrid(torch.arange(64), torch.arange(64))
         #     root_pos[:, 0], root_pos[:, 1] = x_grid.flatten()[env_ids] * 2, y_grid.flatten()[env_ids] * 2

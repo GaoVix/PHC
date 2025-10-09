@@ -127,7 +127,8 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         self.viewer_o3d = flags.render_o3d
         self.vis_ref = True
         self.vis_contact = False
-        self._sampled_motion_ids = torch.arange(self.num_envs).to(self.device)
+        # self._sampled_motion_ids = torch.arange(self.num_envs).to(self.device)
+        self._sampled_motion_ids = self._motion_lib.sample_motions(self.num_envs)
         # self._sampled_motion_ids = torch.zeros(self.num_envs, dtype=torch.long).to(self.device)
         self.create_o3d_viewer()
         self.save_flag=True
@@ -1188,12 +1189,9 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
 
             if flags.test:
                 motion_times[:] = 0
-        # motion_times = torch.zeros(num_envs, device=self.device)
-        # print("sampling motions from scrath!!!!!!!!!!!!!")
+
         if self.humanoid_type in ['h1', 'g1',"smpl", "smplh", "smplx"] :
-            # print(111111111111111)
-            # print(self._global_offset)
-            # print(111111111111111)
+
             if MODIFY:
                 init_state = self.init_state
 
@@ -1215,45 +1213,7 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
             root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, smpl_params, limb_weights, pose_aa, ref_rb_pos, ref_rb_rot, ref_body_vel, ref_body_ang_vel = \
                 motion_res["root_pos"], motion_res["root_rot"], motion_res["dof_pos"], motion_res["root_vel"], motion_res["root_ang_vel"], motion_res["dof_vel"], \
                 motion_res["motion_bodies"], motion_res["motion_limb_weights"], motion_res["motion_aa"], motion_res["rg_pos"], motion_res["rb_rot"], motion_res["body_vel"], motion_res["body_ang_vel"]
-            # if self.save_flag:
 
-            #     motion_res_np = {
-            #         "root_pos": motion_res["root_pos"].cpu().numpy(),
-            #         "root_rot": motion_res["root_rot"].cpu().numpy(),
-            #         "dof_pos": motion_res["dof_pos"].cpu().numpy(),
-            #         "root_vel": motion_res["root_vel"].cpu().numpy(),
-            #         "root_ang_vel": motion_res["root_ang_vel"].cpu().numpy(),
-            #         "dof_vel": motion_res["dof_vel"].cpu().numpy(),
-            #         "smpl_params": motion_res["motion_bodies"].cpu().numpy(),
-            #         "limb_weights": motion_res["motion_limb_weights"].cpu().numpy(),
-            #         "pose_aa": motion_res["motion_aa"].cpu().numpy(),
-            #         "ref_rb_pos": motion_res["rg_pos"].cpu().numpy(),
-            #         "ref_rb_rot": motion_res["rb_rot"].cpu().numpy(),
-            #         "ref_body_vel": motion_res["body_vel"].cpu().numpy(),
-            #         "ref_body_ang_vel": motion_res["body_ang_vel"].cpu().numpy()
-            #     }
-            #     print('-------------------------------------------------------------------------')
-            #     print("reset envs")
-            #     print(num_envs)
-            #     np.savez("/mnt/Exp_HDD/dataset/test/init_motion_res_data2.npz", **motion_res_np)
-            #     self.save_flag=False
-            #     print("offset")
-            #     print(torch.sum(self._global_offset[env_ids]))
-            #     print("times")
-            #     print(motion_times)
-            #     print("Init state motion_res saved as motion_res_data.npz")
-            #     print('-------------------------------------------------------------------------')
-            #     # raise RuntimeError
-            # else:
-            #     print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            #     print("New Ref State Sampled!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            #     print("reset num")
-            #     print(num_envs)
-            #     print("reset time")
-            #     print(torch.sum(motion_times))
-            #     print("offset")
-            #     print(torch.sum(self._global_offset[env_ids]))
-            #     print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         else:
             root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, key_pos = self._motion_lib.get_motion_state(self._sampled_motion_ids[env_ids], motion_times)
             rb_pos, rb_rot = None, None
