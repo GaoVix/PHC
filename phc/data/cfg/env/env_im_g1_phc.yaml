@@ -1,6 +1,6 @@
 task: HumanoidIm
 motion_file: ""
-num_envs: 1536  # 1024 #3072
+num_envs: 3072  # 1024 #3072
 env_spacing: 5
 episode_length: 300
 is_flag_run: False
