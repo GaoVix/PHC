@@ -1319,7 +1319,8 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
 
         pass_time_max = self.progress_buf >= self.max_episode_length - 1
         if not MODIFY:
-            pass_time_motion_len = time >= self._motion_lib._motion_lengths
+            # pass_time_motion_len = time >= self._motion_lib._motion_lengths
+            pass_time_motion_len = time >= self._motion_lib._motion_lengths[self._sampled_motion_ids]
         else:
             return
             pass_time_motion_len = time >= 500
