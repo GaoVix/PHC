@@ -35,7 +35,7 @@ class MotionLib():
 
     def __init__(self):
         self._device = 'cuda'
-        self._load_motions('/mnt/Exp_HDD/dataset/test/new_data_0.015')
+        self._load_motions('/mnt/Exp_HDD/dataset/cmu_locomotion')
         # self.motion_ids = torch.arange(len(self._motions), dtype=torch.long, device=self._device)
 
         return
