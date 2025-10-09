@@ -134,7 +134,7 @@ class IMAmpAgent(amp_agent.AMPAgent):
         
         
     def eval(self):
-        return
+        return {}
         print("############################ Evaluation ############################")
         if not flags.has_eval:
             return {}
