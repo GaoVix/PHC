@@ -120,10 +120,7 @@ class AMPBuilder(network_builder.A2CBuilder):
                         sigma = mu * 0.0 + self.sigma_act(self.sigma)
                     else:
                         sigma = self.sigma_act(self.sigma(a_out))
-                    print('----------------------')
-                    print(666)
-                    print(sigma)
-                    print('-----------------------')
+
                     return mu, sigma, a_states
 
             else:

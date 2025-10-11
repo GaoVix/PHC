@@ -77,6 +77,7 @@ class AMPPNNBuilder(AMPBuilder):
 
             if self.is_continuous:
                 # mu = self.mu_act(self.mu(a_out))
+                self.sigma.fill(-2.0)
                 mu = a_out
                 if self.space_config['fixed_sigma']:
                     sigma = mu * 0.0 + self.sigma_act(self.sigma)
