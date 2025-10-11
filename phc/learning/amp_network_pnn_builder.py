@@ -82,6 +82,9 @@ class AMPPNNBuilder(AMPBuilder):
                     sigma = mu * 0.0 + self.sigma_act(self.sigma)
                 else:
                     sigma = self.sigma_act(self.sigma(a_out))
-
+                print('----------------------')
+                print(777)
+                print(sigma)
+                print('-----------------------')
                 return mu, sigma
             return
