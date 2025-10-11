@@ -78,7 +78,7 @@ class AMPPNNBuilder(AMPBuilder):
             if self.is_continuous:
                 # mu = self.mu_act(self.mu(a_out))
                 mu = a_out
-                va = torch.full(mu.shape, -1.7).to(mu.device)
+                va = torch.full(mu.shape, -1.0).to(mu.device)
                 sigm = torch.exp(va).to(mu.device)
                 distr = torch.distributions.Normal(mu, sigm, validate_args=False)
                 mu = distr.sample().to(mu.device)
