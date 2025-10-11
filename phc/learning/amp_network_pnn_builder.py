@@ -78,10 +78,10 @@ class AMPPNNBuilder(AMPBuilder):
             if self.is_continuous:
                 # mu = self.mu_act(self.mu(a_out))
                 mu = a_out
-                va = torch.full(mu.shape, -1.7)
-                sigm = torch.exp(va)
+                va = torch.full(mu.shape, -1.7).to(mu.device)
+                sigm = torch.exp(va).to(mu.device)
                 distr = torch.distributions.Normal(mu, sigm, validate_args=False)
-                mu = distr.sample()
+                mu = distr.sample().to(mu.device)
                 if self.space_config['fixed_sigma']:
                     sigma = mu * 0.0 + self.sigma_act(self.sigma)
                 else:
