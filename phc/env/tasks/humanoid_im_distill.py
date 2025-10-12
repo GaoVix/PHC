@@ -204,13 +204,7 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
                             weights = self.composer(full_obs)
                             gt_action = torch.sum(weights[:, :, None] * x_all, dim=1)
                         else:
-                            gt_action, _ = self.pnn(full_obs)
-                            for i in gt_action:
-                                print(i.shape)
-                                print(777)
-                            print('----------------------')
-                            print(_.shape)
-                            raise RuntimeError
+                            gt_action, _ = self.pnn(full_obs, idx=0)
                     else:
                         gt_action = self.encoder(full_obs)
                         # x_all = torch.stack([net(full_obs) for net in self.actors], dim=1)
