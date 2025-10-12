@@ -133,6 +133,7 @@ class MotionLib():
         # self.body_pos[:,:,2] += 0.03
 
         self.num_motions = len(_motions)
+        self._num_unique_motions = self.num_motions
         lengths = self._motion_num_frames
         lengths_shifted = lengths.roll(1)
         lengths_shifted[0] = 0
