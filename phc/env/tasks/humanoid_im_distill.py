@@ -204,11 +204,11 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
                             weights = self.composer(full_obs)
                             gt_action = torch.sum(weights[:, :, None] * x_all, dim=1)
                         else:
-                            gt_action, _ = self.pnn(full_obs, idx=-1)
+                            gt_action, _ = self.pnn(full_obs, idx=0)
                     else:
                         gt_action = self.encoder(full_obs)
                         # x_all = torch.stack([net(full_obs) for net in self.actors], dim=1)
-                gt_action = gt_action[-1]
+
                 if self.save_kin_info:
                     self.kin_dict['gt_action'] = gt_action.squeeze()
                     self.kin_dict['progress_buf'] = self.progress_buf.clone()
