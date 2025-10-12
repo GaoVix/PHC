@@ -37,6 +37,11 @@ class AMPAgent(common_agent.CommonAgent):
 
     def __init__(self, base_name, config):
         super().__init__(base_name, config)
+        if self.config.get('use_seq_rl', False):
+            # Use the is_rnn to force the dataset to have sequencal format.
+            self.dataset = amp_datasets.AMPDataset(self.batch_size, self.minibatch_size, self.is_discrete, True, self.ppo_device, self.seq_len)
+        else:
+            self.dataset = amp_datasets.AMPDataset(self.batch_size, self.minibatch_size, self.is_discrete, self.is_rnn, self.ppo_device, self.seq_len)
 
 
         if self.normalize_value:
@@ -51,17 +56,24 @@ class AMPAgent(common_agent.CommonAgent):
         else:
             self._disc_reward_mean_std = None
 
+        self.save_kin_info = self.vec_env.env.task.cfg.env.get("save_kin_info", False)
+        self.only_kin_loss = self.vec_env.env.task.cfg.env.get("only_kin_loss", False)
         self.temp_running_mean = self.vec_env.env.task.temp_running_mean # use temp running mean to make sure the obs used for training is the same as calc gradient.
 
         kin_lr = float(self.vec_env.env.task.kin_lr)
         
+        if self.save_kin_info:
+            self.kin_dict_info = None
+            self.kin_optimizer = torch.optim.Adam(self.model.a2c_network.parameters(), kin_lr)
+
         # ZL Hack
         if self.vec_env.env.task.fitting:
             print("#################### Fitting and freezing!! ####################")
-            # checkpoint = torch_ext.load_checkpoint(self.vec_env.env.task.models_path[0])
-            # self.set_stats_weights(checkpoint)  # loads mean std. essential for distilling knowledge. will not load if has a shape mismatch.
+            checkpoint = torch_ext.load_checkpoint(self.vec_env.env.task.models_path[0])
+
+            self.set_stats_weights(checkpoint)  # loads mean std. essential for distilling knowledge. will not load if has a shape mismatch.
             self.freeze_state_weights()  # freeze the mean stds.
-            # load_my_state_dict(self.model.state_dict(), checkpoint['model'])  # loads everything (model, std, ect.). that can be load from the last model.
+            load_my_state_dict(self.model.state_dict(), checkpoint['model'])  # loads everything (model, std, ect.). that can be load from the last model.
             # self.value_mean_std # not freezing value function though.
         
         return
@@ -132,7 +144,18 @@ class AMPAgent(common_agent.CommonAgent):
         super().init_tensors()
         self._build_amp_buffers()
 
-            
+        if self.save_kin_info:
+            B, S, _ = self.experience_buffer.tensor_dict['obses'].shape
+            kin_dict = self.vec_env.env.task.kin_dict
+            kin_dict_size = np.sum([v.reshape(v.shape[0], -1).shape[-1] for k, v in kin_dict.items()])
+            self.experience_buffer.tensor_dict['kin_dict'] = torch.zeros((B, S, kin_dict_size)).to(self.experience_buffer.tensor_dict['obses'])
+            self.tensor_list += ['kin_dict']
+
+        if self.vec_env.env.task.z_type == "vae":
+            B, S, _ = self.experience_buffer.tensor_dict['obses'].shape
+            self.experience_buffer.tensor_dict['z_noise'] = torch.zeros(B, S, self.model.a2c_network.embedding_size).to(self.experience_buffer.tensor_dict['obses'])
+            self.tensor_list += ['z_noise']
+
         return
 
     def set_eval(self):
@@ -218,7 +241,11 @@ class AMPAgent(common_agent.CommonAgent):
             if self.has_central_value:
                 self.experience_buffer.update_data_rnn('states', indices[::self.num_agents], play_mask[::self.num_agents] // self.num_agents, self.obs['states'])
 
-            self.obs, rewards, self.dones, infos = self.env_step(res_dict['actions'])
+            if self.only_kin_loss:
+                # pure behavior cloning, kinemaitc loss.
+                self.obs, rewards, self.dones, infos = self.env_step(res_dict['mus'])
+            else:
+                self.obs, rewards, self.dones, infos = self.env_step(res_dict['actions'])
             
                 
             shaped_rewards = self.rewards_shaper(rewards)
@@ -266,6 +293,11 @@ class AMPAgent(common_agent.CommonAgent):
 
             self.current_rewards = self.current_rewards * not_dones.unsqueeze(1)
             self.current_lengths = self.current_lengths * not_dones
+
+            if self.only_kin_loss:
+                self.experience_buffer.update_data_rnn('kin_dict', indices, play_mask, torch.cat([v.reshape(v.shape[0], -1) for k, v in infos['kin_dict'].items()], dim = -1))
+                if self.kin_dict_info is None:
+                    self.kin_dict_info = {k: (v.shape, v.reshape(v.shape[0], -1).shape) for k, v in infos['kin_dict'].items()}
 
             if (self.vec_env.env.task.viewer):
                 self._amp_debug(infos)
@@ -332,13 +364,23 @@ class AMPAgent(common_agent.CommonAgent):
             if self.has_central_value:
                 self.experience_buffer.update_data('states', n, self.obs['states'])
             
-            self.obs, rewards, self.dones, infos = self.env_step(res_dict['actions'])
+            if self.only_kin_loss and self.save_kin_info:
+                # pure behavior cloning, kinemaitc loss.
+                self.obs, rewards, self.dones, infos = self.env_step(res_dict['mus'])
+            else:
+                self.obs, rewards, self.dones, infos = self.env_step(res_dict['actions'])
                 
             shaped_rewards = self.rewards_shaper(rewards)
             self.experience_buffer.update_data('rewards', n, shaped_rewards)
             self.experience_buffer.update_data('next_obses', n, self.obs['obs'])
             self.experience_buffer.update_data('dones', n, self.dones)
             self.experience_buffer.update_data('amp_obs', n, infos['amp_obs'])
+
+            if self.save_kin_info:
+                self.experience_buffer.update_data('kin_dict', n, torch.cat([v.reshape(v.shape[0], -1) for k, v in infos['kin_dict'].items()], dim = -1))
+
+                if self.kin_dict_info is None:
+                    self.kin_dict_info = {k: (v.shape, v.reshape(v.shape[0], -1).shape) for k, v in infos['kin_dict'].items()}
 
                 
             terminated = infos['terminate'].float()
@@ -404,7 +446,12 @@ class AMPAgent(common_agent.CommonAgent):
         dataset_dict['amp_obs_demo'] = batch_dict['amp_obs_demo']
         dataset_dict['amp_obs_replay'] = batch_dict['amp_obs_replay']
 
-            
+        if self.save_kin_info:
+            dataset_dict['kin_dict'] = batch_dict['kin_dict']
+
+        if self.vec_env.env.task.z_type == "vae":
+            dataset_dict['z_noise'] = batch_dict['z_noise']
+
         self.dataset.update_values_dict(dataset_dict, rnn_format = True, horizon_length = self.horizon_length, num_envs = self.num_actors)
         # self.dataset.update_values_dict(dataset_dict)
 
@@ -501,6 +548,10 @@ class AMPAgent(common_agent.CommonAgent):
         self._record_train_batch_info(batch_dict, train_info)
         self.post_epoch(self.epoch_num)
         
+        if self.save_kin_info:
+            print_str = "Kin: " + " \t".join([f"{k}: {torch.mean(torch.tensor(train_info[k])):.4f}" for k, v in train_info.items() if k.startswith("kin")])
+            print(print_str)
+
         return train_info
 
     def pre_epoch(self, epoch_num):
@@ -583,109 +634,221 @@ class AMPAgent(common_agent.CommonAgent):
         curr_e_clip = lr_mul * self.e_clip
         
         self.train_result = {}
-        
-        batch_dict = {'is_train': True, 'amp_steps': self.vec_env.env.task._num_amp_obs_steps, \
-            'prev_actions': actions_batch, 'obs': obs_batch_processed, 'amp_obs': amp_obs, 'amp_obs_replay': amp_obs_replay, 'amp_obs_demo': amp_obs_demo, \
-                "obs_orig": obs_batch
-                }
-    
-        rnn_masks = None
-        rnn_len = self.horizon_length
-        rnn_len = 1
-        if self.is_rnn:
-            rnn_masks = input_dict['rnn_masks']
-            batch_dict['rnn_states'] = input_dict['rnn_states']
-            batch_dict['seq_length'] = rnn_len
-            
-            
-        with torch.cuda.amp.autocast(enabled=self.mixed_precision):
-            res_dict = self.model(batch_dict) # current model if RNN, has BPTT enabled. 
-            
-            action_log_probs = res_dict['prev_neglogp']
-            values = res_dict['values']
-            entropy = res_dict['entropy']
-            mu = res_dict['mus']
-            sigma = res_dict['sigmas']
-            disc_agent_logit = res_dict['disc_agent_logit']
-            disc_agent_replay_logit = res_dict['disc_agent_replay_logit']
-            disc_demo_logit = res_dict['disc_demo_logit']
+        if self.only_kin_loss:
+            # pure behavior cloning, kinemaitc loss.
+            batch_dict = {}
+            batch_dict['obs_orig'] = obs_batch
+            batch_dict['obs'] = input_dict['obs_processed']
+            batch_dict['kin_dict'] = input_dict['kin_dict']
 
-            if not rnn_masks is None:
-                rnn_mask_bool = rnn_masks.squeeze().bool()
-                old_action_log_probs_batch, action_log_probs, advantage, values, entropy, mu, sigma, return_batch, old_mu_batch, old_sigma_batch = \
-                    old_action_log_probs_batch[rnn_mask_bool], action_log_probs[rnn_mask_bool], advantage[rnn_mask_bool], values[rnn_mask_bool], \
-                        entropy[rnn_mask_bool], mu[rnn_mask_bool], sigma[rnn_mask_bool], return_batch[rnn_mask_bool], old_mu_batch[rnn_mask_bool], old_sigma_batch[rnn_mask_bool]
-                
-                # flatten values for computing loss
-                
-                
-            a_info = self._actor_loss(old_action_log_probs_batch, action_log_probs, advantage, curr_e_clip)
-            a_loss = a_info['actor_loss']
+            # if humanoid_env.z_type == "vae":
+            #     batch_dict['z_noise'] = input_dict['z_noise']
 
-            c_info = self._critic_loss(value_preds_batch, values, curr_e_clip, return_batch, self.clip_value)
-            c_loss = c_info['critic_loss']
-
-            b_loss = self.bound_loss(mu)
-
-            a_loss = torch.mean(a_loss)
-            c_loss = torch.mean(c_loss)
-            b_loss = torch.mean(b_loss)
-            entropy = torch.mean(entropy)
-
-            disc_agent_cat_logit = torch.cat([disc_agent_logit, disc_agent_replay_logit], dim=0)
-            
-            disc_info = self._disc_loss(disc_agent_cat_logit, disc_demo_logit, amp_obs_demo)
-            disc_loss = disc_info['disc_loss']
-
-            loss = a_loss + self.critic_coef * c_loss - self.entropy_coef * entropy + self.bounds_loss_coef * b_loss \
-                + self._disc_coef * disc_loss
-            
-            
-            a_clip_frac = torch.mean(a_info['actor_clipped'].float())
-
-            a_info['actor_loss'] = a_loss
-            a_info['actor_clip_frac'] = a_clip_frac
-            c_info['critic_loss'] = c_loss
-
-            if self.multi_gpu:
-                self.optimizer.zero_grad()
-            else:
-                for param in self.model.parameters():
-                    param.grad = None
-
-        self.scaler.scale(loss).backward()
-        
-        with torch.no_grad():
-            reduce_kl = not self.is_rnn
-            kl_dist = torch_ext.policy_kl(mu.detach(), sigma.detach(), old_mu_batch, old_sigma_batch, reduce_kl)
+            rnn_len = self.horizon_length
+            rnn_len = 1
             if self.is_rnn:
-                kl_dist = kl_dist.mean()
-        
-                
-        #TODO: Refactor this ugliest code of the year
-        if self.truncate_grads:
-            if self.multi_gpu:
-                self.optimizer.synchronize()
-                self.scaler.unscale_(self.optimizer)
-                nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
-                with self.optimizer.skip_synchronize():
+                batch_dict['rnn_states'] = input_dict['rnn_states']
+                batch_dict['seq_length'] = rnn_len
+
+            kin_loss_info = self._optimize_kin(batch_dict)
+            self.train_result.update( {'entropy': torch.tensor(0).float(), 'kl': torch.tensor(0).float(), 'last_lr': self.last_lr, 'lr_mul': torch.tensor(0).float()})
+
+        else:
+            batch_dict = {'is_train': True, 'amp_steps': self.vec_env.env.task._num_amp_obs_steps, \
+                'prev_actions': actions_batch, 'obs': obs_batch_processed, 'amp_obs': amp_obs, 'amp_obs_replay': amp_obs_replay, 'amp_obs_demo': amp_obs_demo, \
+                    "obs_orig": obs_batch
+                    }
+
+            rnn_masks = None
+            rnn_len = self.horizon_length
+            rnn_len = 1
+            if self.is_rnn:
+                rnn_masks = input_dict['rnn_masks']
+                batch_dict['rnn_states'] = input_dict['rnn_states']
+                batch_dict['seq_length'] = rnn_len
+
+
+            with torch.cuda.amp.autocast(enabled=self.mixed_precision):
+                res_dict = self.model(batch_dict) # current model if RNN, has BPTT enabled.
+
+                action_log_probs = res_dict['prev_neglogp']
+                values = res_dict['values']
+                entropy = res_dict['entropy']
+                mu = res_dict['mus']
+                sigma = res_dict['sigmas']
+                disc_agent_logit = res_dict['disc_agent_logit']
+                disc_agent_replay_logit = res_dict['disc_agent_replay_logit']
+                disc_demo_logit = res_dict['disc_demo_logit']
+
+                if not rnn_masks is None:
+                    rnn_mask_bool = rnn_masks.squeeze().bool()
+                    old_action_log_probs_batch, action_log_probs, advantage, values, entropy, mu, sigma, return_batch, old_mu_batch, old_sigma_batch = \
+                        old_action_log_probs_batch[rnn_mask_bool], action_log_probs[rnn_mask_bool], advantage[rnn_mask_bool], values[rnn_mask_bool], \
+                            entropy[rnn_mask_bool], mu[rnn_mask_bool], sigma[rnn_mask_bool], return_batch[rnn_mask_bool], old_mu_batch[rnn_mask_bool], old_sigma_batch[rnn_mask_bool]
+
+                    # flatten values for computing loss
+
+                a_info = self._actor_loss(old_action_log_probs_batch, action_log_probs, advantage, curr_e_clip)
+                a_loss = a_info['actor_loss']
+
+                c_info = self._critic_loss(value_preds_batch, values, curr_e_clip, return_batch, self.clip_value)
+                c_loss = c_info['critic_loss']
+
+                b_loss = self.bound_loss(mu)
+
+                a_loss = torch.mean(a_loss)
+                c_loss = torch.mean(c_loss)
+                b_loss = torch.mean(b_loss)
+                entropy = torch.mean(entropy)
+
+                disc_agent_cat_logit = torch.cat([disc_agent_logit, disc_agent_replay_logit], dim=0)
+
+                disc_info = self._disc_loss(disc_agent_cat_logit, disc_demo_logit, amp_obs_demo)
+                disc_loss = disc_info['disc_loss']
+
+                loss = a_loss + self.critic_coef * c_loss - self.entropy_coef * entropy + self.bounds_loss_coef * b_loss \
+                    + self._disc_coef * disc_loss
+
+
+                a_clip_frac = torch.mean(a_info['actor_clipped'].float())
+
+                a_info['actor_loss'] = a_loss
+                a_info['actor_clip_frac'] = a_clip_frac
+                c_info['critic_loss'] = c_loss
+
+                if self.multi_gpu:
+                    self.optimizer.zero_grad()
+                else:
+                    for param in self.model.parameters():
+                        param.grad = None
+
+            self.scaler.scale(loss).backward()
+
+            with torch.no_grad():
+                reduce_kl = not self.is_rnn
+                kl_dist = torch_ext.policy_kl(mu.detach(), sigma.detach(), old_mu_batch, old_sigma_batch, reduce_kl)
+                if self.is_rnn:
+                    kl_dist = kl_dist.mean()
+
+
+            #TODO: Refactor this ugliest code of the year
+            if self.truncate_grads:
+                if self.multi_gpu:
+                    self.optimizer.synchronize()
+                    self.scaler.unscale_(self.optimizer)
+                    nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
+                    with self.optimizer.skip_synchronize():
+                        self.scaler.step(self.optimizer)
+                        self.scaler.update()
+                else:
+                    self.scaler.unscale_(self.optimizer)
+                    nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
                     self.scaler.step(self.optimizer)
                     self.scaler.update()
             else:
-                self.scaler.unscale_(self.optimizer)
-                nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
                 self.scaler.step(self.optimizer)
                 self.scaler.update()
-        else:
-            self.scaler.step(self.optimizer)
-            self.scaler.update()
-          
-        self.train_result.update( {'entropy': entropy, 'kl': kl_dist, 'last_lr': self.last_lr, 'lr_mul': lr_mul, 'b_loss': b_loss})
-        self.train_result.update(a_info)
-        self.train_result.update(c_info)
-        self.train_result.update(disc_info)
+
+            self.train_result.update( {'entropy': entropy, 'kl': kl_dist, 'last_lr': self.last_lr, 'lr_mul': lr_mul, 'b_loss': b_loss})
+            self.train_result.update(a_info)
+            self.train_result.update(c_info)
+            self.train_result.update(disc_info)
             
+        if self.save_kin_info:
+            self.train_result.update(kin_loss_info)
+
         return
+
+    def _assamble_kin_dict(self, kin_dict_flat):
+        B = kin_dict_flat.shape[0]
+        len_acc = 0
+        kin_dict = {}
+        for k, v in self.kin_dict_info.items():
+            kin_dict[k] = kin_dict_flat[:, len_acc:(len_acc + v[1][-1])].view(B, *v[0][1:])
+            len_acc += v[1][-1]
+        return kin_dict
+
+    def _optimize_kin(self, batch_dict):
+        info_dict = {}
+        humanoid_env = self.vec_env.env.task
+        if humanoid_env.distill:
+            kin_dict = self._assamble_kin_dict(batch_dict['kin_dict'])
+            gt_action = kin_dict['gt_action']
+
+            kin_body_rot_geo_loss, kin_vel_loss_l2 = 0.0, 0.0
+            if humanoid_env.z_type == "vae":
+                pred_action, pred_action_sigma, extra_dict = self.model.a2c_network.eval_actor(batch_dict, return_extra = True)
+                # kin_body_loss = (pred_action - gt_action).pow(2).mean() * 10  ## MSE
+                kin_action_loss = torch.norm(pred_action - gt_action, dim=-1).mean()  ## RMSE
+
+                vae_mu, vae_log_var = extra_dict['vae_mu'], extra_dict['vae_log_var']
+                if humanoid_env.use_vae_prior or humanoid_env.use_vae_fixed_prior:
+                    prior_mu, prior_log_var = self.model.a2c_network.compute_prior(batch_dict)
+                    KLD = kl_multi(vae_mu, vae_log_var, prior_mu, prior_log_var).mean()
+                else:
+                    KLD = -0.5 * torch.sum(1 + vae_log_var - vae_mu.pow(2) - vae_log_var.exp()) / vae_mu.shape[0]
+
+                ar1_prior, regu_prior = 0, 0
+                if humanoid_env.use_ar1_prior:
+                    time_zs = vae_mu.view(self.minibatch_size // self.horizon_length, self.horizon_length, -1)
+                    phi = 0.99
+
+                    error = time_zs[:, 1:] - time_zs[:, :-1] * phi
+
+                    idxes = kin_dict['progress_buf'].view(self.minibatch_size // self.horizon_length, self.horizon_length, -1)
+
+                    not_consecs = ((idxes[:, 1:] - idxes[:, :-1]) != 1).view(-1)
+                    error = error.view(-1, error.shape[-1])
+                    error[not_consecs] = 0
+
+                    starteres = ((idxes <= 2)[:, 1:] + (idxes <= 2)[:, :-1]).view(-1) # make sure the "drop" is not affected.
+                    error[starteres] = 0
+
+                    ar1_prior = torch.norm(error, dim=-1).mean()
+                    info_dict["kin_ar1"] = ar1_prior
+
+                if humanoid_env.use_vae_prior_regu:
+                    prior_mean_regu = ((prior_mu ** 2).mean() + (vae_mu ** 2).mean()) * 0.001 # penalize large prior values
+                    prior_var_regu = ((prior_log_var ** 2).mean() + (vae_log_var ** 2).mean()) * 0.001 # penalize large variance values
+                    regu_prior = prior_mean_regu + prior_var_regu
+                    info_dict["kin_prior_regu"] = regu_prior
+
+                kin_loss = kin_action_loss +  KLD * humanoid_env.kld_coefficient + ar1_prior * humanoid_env.ar1_coefficient + regu_prior * 0.005
+
+
+                info_dict["kin_action_loss"] = kin_action_loss
+                info_dict["kin_KLD"] = KLD
+
+                if KLD > 100:
+                    import ipdb; ipdb.set_trace()
+                    print("KLD is too large, clipping to 10")
+
+                ######### KLD annealing #######
+                if humanoid_env.kld_anneal:
+                    anneal_start_epoch = 2500
+                    anneal_end_epoch = 5000
+                    min_val = humanoid_env.kld_coefficient_min
+                    if self.epoch_num > anneal_start_epoch:
+                        humanoid_env.kld_coefficient = (0.01 - min_val) * max((anneal_end_epoch -self.epoch_num) / (anneal_end_epoch - anneal_start_epoch), 0) + min_val
+                    info_dict["kin_kld_w"] = humanoid_env.kld_coefficient
+                ######### KLD annealing #######
+
+
+
+
+            else:
+                raise NotImplementedError()
+
+            self.kin_optimizer.zero_grad()
+            kin_loss.backward()
+            nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_norm)
+            self.kin_optimizer.step()
+
+            info_dict.update({"kin_loss": kin_loss})
+
+        return info_dict
+
+
 
     def _load_config_params(self, config):
         super()._load_config_params(config)

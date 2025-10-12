@@ -34,6 +34,7 @@ class AMPPNNBuilder(AMPBuilder):
             self.track_bodies = self.task_obs_size_detail['track_bodies']
             self.num_prim = self.task_obs_size_detail['num_prim']
             self.training_prim = self.task_obs_size_detail['training_prim']
+            self.model_base = self.task_obs_size_detail['models_path'][0]
             self.actors_to_load = self.task_obs_size_detail['actors_to_load']
             self.has_lateral = self.task_obs_size_detail['has_lateral']
 
@@ -52,6 +53,7 @@ class AMPPNNBuilder(AMPBuilder):
             self.discrete = params.get("discrete", False)
 
             self.pnn = PNN(actor_mlp_args, output_size=kwargs['actions_num'], numCols=self.num_prim, has_lateral=self.has_lateral)
+            # self.pnn.load_base_net(self.model_base, self.actors_to_load)
             self.pnn.freeze_pnn(self.training_prim)
 
             self.running_mean = kwargs['mean_std'].running_mean
@@ -78,10 +80,10 @@ class AMPPNNBuilder(AMPBuilder):
             if self.is_continuous:
                 # mu = self.mu_act(self.mu(a_out))
                 mu = a_out
-                va = torch.full(mu.shape, -1.0).to(mu.device)
-                sigm = torch.exp(va).to(mu.device)
-                distr = torch.distributions.Normal(mu, sigm, validate_args=False)
-                mu = distr.sample().to(mu.device)
+                # va = torch.full(mu.shape, -1.0).to(mu.device)
+                # sigm = torch.exp(va).to(mu.device)
+                # distr = torch.distributions.Normal(mu, sigm, validate_args=False)
+                # mu = distr.sample().to(mu.device)
                 if self.space_config['fixed_sigma']:
                     sigma = mu * 0.0 + self.sigma_act(self.sigma)
                 else:
