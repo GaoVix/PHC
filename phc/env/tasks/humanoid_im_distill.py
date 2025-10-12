@@ -205,7 +205,10 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
                             gt_action = torch.sum(weights[:, :, None] * x_all, dim=1)
                         else:
                             gt_action, _ = self.pnn(full_obs)
-                            print(gt_action.shape)
+                            for i in gt_action:
+                                print(i.shape)
+                                print(777)
+                            print('----------------------')
                             print(_.shape)
                             raise RuntimeError
                     else:
