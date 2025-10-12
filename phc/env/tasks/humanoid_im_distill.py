@@ -55,10 +55,16 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
                 self.num_prim_distill = self.distill_model_config.get("num_prim", 3)
                 self.discrete_moe_distill = self.distill_model_config.get("discrete_moe", False)
                 if self.has_pnn_distill:
-                    assert (len(self.models_path) == 2)
-                    self.pnn = load_pnn(check_points[0], num_prim = self.num_prim_distill, has_lateral = self.has_lateral_distill, activation = self.z_activation, device = self.device)
-                    self.running_mean, self.running_var = check_points[0]['running_mean_std']['running_mean'], check_points[0]['running_mean_std']['running_var']
-                    self.composer = load_mcp_mlp(check_points[1], activation = self.z_activation, device = self.device, mlp_name = "composer")
+                    if (len(self.models_path) == 2):
+                        self.pnn = load_pnn(check_points[0], num_prim = self.num_prim_distill, has_lateral = self.has_lateral_distill, activation = self.z_activation, device = self.device)
+                        self.running_mean, self.running_var = check_points[0]['running_mean_std']['running_mean'], check_points[0]['running_mean_std']['running_var']
+                        self.composer = load_mcp_mlp(check_points[1], activation = self.z_activation, device = self.device, mlp_name = "composer")
+                    elif (len(self.models_path) == 1):
+                        self.pnn = load_pnn(check_points[0], num_prim=self.num_prim_distill, has_lateral=self.has_lateral_distill, activation=self.z_activation, device=self.device)
+                        self.running_mean, self.running_var = check_points[0]['running_mean_std']['running_mean'], check_points[0]['running_mean_std']['running_var']
+                        self.composer = None
+                    else:
+                        raise ValueError("No pnn loaded")
                 else:
                     self.encoder = load_mcp_mlp(check_points[0], activation = self.z_activation, device = self.device)
                 # else:
@@ -192,10 +198,13 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
                         gt_action = self.decoder.decoder(torch.cat([self_obs, gt_z], dim = -1))
                 else:
                     if self.has_pnn_distill:
-                        _, pnn_actions = self.pnn(full_obs)
-                        x_all = torch.stack(pnn_actions, dim=1)
-                        weights = self.composer(full_obs)
-                        gt_action = torch.sum(weights[:, :, None] * x_all, dim=1)
+                        if self.composer is not None:
+                            _, pnn_actions = self.pnn(full_obs)
+                            x_all = torch.stack(pnn_actions, dim=1)
+                            weights = self.composer(full_obs)
+                            gt_action = torch.sum(weights[:, :, None] * x_all, dim=1)
+                        else:
+                            gt_action, _ = self.pnn(full_obs)
                     else:
                         gt_action = self.encoder(full_obs)
                         # x_all = torch.stack([net(full_obs) for net in self.actors], dim=1)
