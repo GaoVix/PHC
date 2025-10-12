@@ -45,6 +45,7 @@ from isaacgym import gymtorch
 
 from phc.env.tasks.humanoid import Humanoid, dof_to_obs, remove_base_rot, dof_to_obs_smpl
 from phc.env.util import gym_util
+import phc.env.tasks.humanoid_z as humanoid_z
 from phc.utils.motion_lib_real import MotionLibReal
 from phc.utils.motion_lib_smpl import MotionLibSMPL 
 from phc.utils.motion_lib_base import FixHeightMode
@@ -71,8 +72,7 @@ HACK_OUTPUT_MOTION_ALL = False
 
 MODIFY = False
 
-
-class HumanoidAMP(Humanoid):
+class HumanoidAMP(humanoid_z.HumanoidZ):
 
     class StateInit(Enum):
         Default = 0

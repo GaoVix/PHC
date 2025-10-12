@@ -1,19 +1,23 @@
 # if given, will override the device setting in gym. 
-task: HumanoidImDistillGetup
+task: HumanoidImDistill
 motion_file: ""
-num_envs: 3072
+num_envs: 3072  # 1024 #3072
 env_spacing: 5
 
 # env_spacing: 0.5
 # divide_group: True
 
 episode_length: 300
-isFlagrun: False
+is_flag_run: False
 enable_debug_vis: False
 
+sym_loss_coef: 1
+big_ankle: True
 fut_tracks: False
 fut_tracks_dropout: False
 obs_v: 6
+self_obs_v: 1
+
 auto_pmcp: False
 auto_pmcp_soft: True
 eval_full: False
@@ -44,9 +48,20 @@ zero_out_far_train: False
 zero_out_far_steps: 90
 #######
 
-cycle_motion: True
+cycle_motion: False
 hard_negative: False
 fitting: True
+
+masterfoot: False
+freeze_toe: false
+max_len: 500
+
+has_pnn: True
+num_prim: 3
+training_prim: 0
+has_lateral: False
+actors_to_load: 0
+
 
 only_kin_loss: True
 distill: True
@@ -67,44 +82,46 @@ distill_model_config:
   numTrajSamples: 1
   
 
-models: ['output/dgx/phc_3/Humanoid_00258000.pth', 'output/dgx/phc_comp_3/Humanoid_00023501.pth']
+models: ['output/HumanoidIm/cmu_locomotion/Humanoid_00003600.pth', 'output/dgx/phc_comp_3/Humanoid_00023501.pth']
 
-control_mode: "isaac_pd"
+# control_mode: "isaac_pd"
 
+default_humanoid_mass: 51.436 # H1 config
 real_weight: True
 kp_scale: 1
 remove_toe_im: False # For imitation 
 power_reward: True
+power_coefficient: 0.0005
 
 has_shape_obs: false
 has_shape_obs_disc: false
 has_shape_variation: False
-shape_resampling_interval: 250
+# shape_resampling_interval: 250
 
-pdControl: True
-power_scale: 1.0
-controlFrequencyInv: 2 # 30 Hz
+# pdControl: True
+powerScale: 1.0
+# controlFrequencyInv: 2 # 30 Hz
 stateInit: "Random"  
 hybridInitProb: 0.5
 numAMPObsSteps: 10
 
 local_root_obs: True
-rootHeightObs: True
-key_bodies: ["R_Ankle", "L_Ankle", "R_Wrist",  "L_Wrist"]
-contact_bodies: ["R_Ankle", "L_Ankle", "R_Toe", "L_Toe"]
-reset_bodies: ['Pelvis', 'L_Hip', 'L_Knee', 'R_Hip', 'R_Knee', 'Torso', 'Spine', 'Chest', 'Neck', 'Head', 'L_Thorax', 'L_Shoulder', 'L_Elbow', 'L_Wrist', 'L_Hand', 'R_Thorax', 'R_Shoulder', 'R_Elbow', 'R_Wrist', 'R_Hand']
+root_height_obs: True
+key_bodies: ["left_ankle_roll_link", "right_ankle_roll_link", "left_zero_link",  "right_zero_link"]
+contact_bodies: ["left_ankle_roll_link", "right_ankle_roll_link"]
+reset_bodies:  ['pelvis', 'left_hip_pitch_link', 'left_hip_roll_link', 'left_hip_yaw_link', 'left_knee_link', 'left_ankle_pitch_link', 'left_ankle_roll_link', 'right_hip_pitch_link', 'right_hip_roll_link', 'right_hip_yaw_link', 'right_knee_link', 'right_ankle_pitch_link', 'right_ankle_roll_link', 'torso_link', 'left_shoulder_pitch_link', 'left_shoulder_roll_link', 'left_shoulder_yaw_link', 'left_elbow_pitch_link', 'left_elbow_roll_link', 'left_zero_link', 'left_one_link', 'left_two_link', 'left_three_link', 'left_four_link', 'left_five_link', 'left_six_link', 'right_shoulder_pitch_link', 'right_shoulder_roll_link', 'right_shoulder_yaw_link', 'right_elbow_pitch_link', 'right_elbow_roll_link', 'right_zero_link', 'right_one_link', 'right_two_link', 'right_three_link', 'right_four_link', 'right_five_link', 'right_six_link']
 terminationHeight: 0.15
 enableEarlyTermination: True
 terminationDistance: 0.25
 
 ### Fut config
-numTrajSamples: 10
-trajSampleTimestepInv: 5
+numTrajSamples: 3
+trajSampleTimestepInv: 30
 enableTaskObs: True
 
-asset:
-  assetRoot: "/"
-  assetFileName: "mjcf/smpl_humanoid.xml"
+#asset:
+#  assetRoot: "/"
+#  assetFileName: "mjcf/smpl_humanoid.xml"
 
 plane:
   staticFriction: 1.0

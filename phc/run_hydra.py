@@ -35,7 +35,7 @@ os.environ["OMP_NUM_THREADS"] = "1"
 
 sys.path.append(os.getcwd())
 
-from phc.utils.config import set_np_formatting, set_seed
+from phc.utils.config import set_np_formatting, set_seed, SIM_TIMESTEP
 from phc.utils.parse_task import parse_task
 from isaacgym import gymapi
 from isaacgym import gymutil
@@ -62,6 +62,9 @@ from learning import amp_models
 from learning import amp_network_builder
 from learning import amp_network_mcp_builder
 from learning import amp_network_pnn_builder
+from learning import amp_network_z_builder
+from learning import amp_network_z_reader_builder
+from learning import amp_network_sept_builder
 
 from env.tasks import humanoid_amp_task
 import hydra
@@ -76,7 +79,8 @@ cfg_train = None
 def parse_sim_params(cfg):
     # initialize sim
     sim_params = gymapi.SimParams()
-    sim_params.dt = eval(cfg.sim.physx.step_dt)
+    # sim_params.dt = eval(cfg.sim.physx.step_dt)
+    sim_params.dt = SIM_TIMESTEP
     sim_params.num_client_threads = cfg.sim.slices
     
     if cfg.sim.use_flex:
@@ -254,8 +258,11 @@ def build_alg_runner(algo_observer):
     runner.model_builder.model_factory.register_builder('amp', lambda network, **kwargs: amp_models.ModelAMPContinuous(network))
     runner.model_builder.network_factory.register_builder('amp', lambda **kwargs: amp_network_builder.AMPBuilder())
     runner.model_builder.network_factory.register_builder('amp_mcp', lambda **kwargs: amp_network_mcp_builder.AMPMCPBuilder())
+    runner.model_builder.network_factory.register_builder('amp_sept', lambda **kwargs: amp_network_sept_builder.AMPSeptBuilder())
     runner.model_builder.network_factory.register_builder('amp_pnn', lambda **kwargs: amp_network_pnn_builder.AMPPNNBuilder())
-    
+    runner.model_builder.network_factory.register_builder('amp_z', lambda **kwargs: amp_network_z_builder.AMPZBuilder())
+    runner.model_builder.network_factory.register_builder('amp_z_reader', lambda **kwargs: amp_network_z_reader_builder.AMPZReaderBuilder())
+
     runner.algo_factory.register_builder('im_amp', lambda **kwargs: im_amp.IMAmpAgent(**kwargs))
     runner.player_factory.register_builder('im_amp', lambda **kwargs: im_amp_players.IMAMPPlayerContinuous(**kwargs))
     
@@ -295,7 +302,7 @@ def main(cfg_hydra: DictConfig) -> None:
         flags.real_traj = True
     
     cfg.train = not cfg.test
-    project_name = cfg.get("project_name", "egoquest")
+    project_name = cfg.get("project_name", "PULSE")
     if (not cfg.no_log) and (not cfg.test) and (not cfg.debug):
         wandb.init(
             project=project_name,
