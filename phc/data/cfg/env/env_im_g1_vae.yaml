@@ -82,7 +82,7 @@ distill_model_config:
   numTrajSamples: 1
   
 
-models: ['output/HumanoidIm/cmu_locomotion/Humanoid_00003600.pth', 'output/dgx/phc_comp_3/Humanoid_00023501.pth']
+models: ['output/HumanoidIm/cmu_locomotion/Humanoid_00003600.pth']
 
 # control_mode: "isaac_pd"
 
