@@ -299,6 +299,9 @@ class Humanoid(BaseTask):
         
         ## Kin stuff
         self.kin_loss = cfg["env"].get("kin_loss", False)
+        self.save_kin_info = cfg["env"].get("save_kin_info", False)
+        self.only_kin_loss = cfg["env"].get("only_kin_loss", False)
+        self.kin_policy = cfg["env"].get("kin_policy", False)
         self.kin_lr = cfg["env"].get("kin_lr", 5e-4)
         self.z_readout = cfg["env"].get("z_readout", False)
         self.z_read = cfg["env"].get("z_read", False)
@@ -321,6 +324,8 @@ class Humanoid(BaseTask):
         self.auto_pmcp = cfg["env"].get("auto_pmcp", False)
         self.auto_pmcp_soft = cfg["env"].get("auto_pmcp_soft", False)
         self.strict_eval = cfg["env"].get("strict_eval", False)
+        self.add_obs_noise = cfg["env"].get("add_obs_noise", False)
+
         self._occl_training = cfg["env"].get("occl_training", False)  # Cycle motion, but cycle farrrrr.
         self._occl_training_prob = cfg["env"].get("occl_training_prob", 0.1)  # Cycle motion, but cycle farrrrr.
         self._sim_occlu = False
@@ -330,6 +335,24 @@ class Humanoid(BaseTask):
         self._zero_out_far_steps = cfg["env"].get("zero_out_far_steps", 90)
         self.past_track_steps = cfg["env"].get("past_track_steps", 5)
         #################### Devs ####################
+
+        ########################################################################
+        # Z reader
+        self.vae_reader = cfg["env"].get("vae_reader", False)
+        self.z_type = cfg["env"].get("z_type", None)
+        self.kld_coefficient = cfg["env"].get("kld_coefficient", 0.01)
+        self.kld_coefficient_min = cfg["env"].get("kld_coefficient_min", 0.001)
+        self.ar1_coefficient = cfg["env"].get("ar1_coefficient", 0.005)
+        self.kld_anneal = cfg["env"].get("kld_anneal", True)
+        self.use_ar1_prior = cfg["env"].get("use_ar1_prior", False)
+        self.use_vae_prior = cfg["env"].get("use_vae_prior", False)
+        self.vae_prior_policy = cfg["env"].get("vae_prior_policy", False)
+        self.use_vae_prior_regu = cfg["env"].get("use_vae_prior_regu", False)
+        self.use_vae_fixed_prior = cfg["env"].get("use_vae_fixed_prior", False)
+        self.use_vae_prior_loss = cfg['env'].get("use_vae_prior_loss", False)
+        self.use_vae_sphere_prior = cfg['env'].get("use_vae_sphere_prior", False)
+        self.use_vae_sphere_posterior = cfg['env'].get("use_vae_sphere_posterior", False)
+        ########################################################################
 
         #################### Collect Dataset ####################
         self.add_obs_noise = cfg["env"].get("add_obs_noise", False)

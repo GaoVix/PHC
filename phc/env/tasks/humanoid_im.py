@@ -131,15 +131,29 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         self._sampled_motion_ids = self._motion_lib.sample_motions(self.num_envs)
         # self._sampled_motion_ids = torch.zeros(self.num_envs, dtype=torch.long).to(self.device)
         self.create_o3d_viewer()
-        self.save_flag=True
-        self.motion_res_history = []
-        self.play_index = 0
-        self.data_coll = np.load("/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz", allow_pickle=True)
-        self.init_state = np.load("/mnt/Exp_HDD/dataset/test/init_motion_res_data.npz", allow_pickle=True)
+        self.setup_kin_info()
+        # self.save_flag=True
+        # self.motion_res_history = []
+        # self.play_index = 0
+        # self.data_coll = np.load("/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz", allow_pickle=True)
+         #self.init_state = np.load("/mnt/Exp_HDD/dataset/test/init_motion_res_data.npz", allow_pickle=True)
         # self.collect_state()
         # self.play_state()
         return
-    
+
+    def setup_kin_info(self):
+        if self.save_kin_info:
+            root_pos, root_rot = self._rigid_body_pos[:, 0, :], self._rigid_body_rot[:, 0, :]
+            self.kin_dict = OrderedDict()
+            self.kin_dict.update({ # default set of kinemaitc information
+                "root_pos": root_pos.clone(),
+                "root_rot": root_rot.clone(),
+                "body_pos": self._rigid_body_pos.clone(),
+                "dof_pos": self._dof_pos.clone(),
+                "ref_body_pos": self.ref_body_pos.clone(),
+                "ref_body_vel": self.ref_body_vel.clone(),
+                "ref_body_rot": self.ref_body_rot.clone(),
+            }) # current root pos + root for future aggergration
 
     def play_state(self):
 
@@ -627,6 +641,26 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         task_obs_detail['actors_to_load'] = self.cfg['env'].get("actors_to_load", 2)
         task_obs_detail['has_lateral'] = self.cfg['env'].get("has_lateral", True)
 
+        ### For Z
+        task_obs_detail['proj_norm'] = self.cfg['env'].get("proj_norm", True)
+        task_obs_detail['embedding_norm'] = self.cfg['env'].get("embedding_norm", 3)
+        task_obs_detail['embedding_size'] = self.cfg['env'].get("embedding_size", 256)
+        task_obs_detail['z_readout'] = self.cfg['env'].get("z_readout", False)
+        task_obs_detail['z_type'] = self.cfg['env'].get("z_type", "sphere")
+        task_obs_detail['z_all'] = self.cfg['env'].get("z_all", False)
+        task_obs_detail['use_vae_prior'] = self.cfg['env'].get("use_vae_prior", False)
+        task_obs_detail['use_vae_fixed_prior'] = self.cfg['env'].get("use_vae_fixed_prior", False)
+        task_obs_detail['use_vae_sphere_prior'] = self.cfg['env'].get("use_vae_sphere_prior", False)
+        task_obs_detail['use_vae_sphere_posterior'] = self.cfg['env'].get("use_vae_sphere_posterior", False)
+        task_obs_detail['use_vae_clamped_prior'] = self.cfg['env'].get("use_vae_clamped_prior", False)
+        task_obs_detail['vae_var_clamp_max'] = self.cfg['env'].get("vae_var_clamp_max", 0)
+        task_obs_detail['vae_prior_fixed_logvar'] = self.cfg['env'].get("vae_prior_fixed_logvar", 0)
+        task_obs_detail['num_unique_motions'] = self._motion_lib._num_unique_motions
+        task_obs_detail['vae_reader'] = self.cfg['env'].get("vae_reader", False)
+        task_obs_detail['dict_size'] = self.cfg['env'].get("dict_size", 1024)
+        task_obs_detail['embedding_partion'] = self.cfg['env'].get("embedding_partion", 1)
+
+
         return task_obs_detail
 
     def _build_termination_heights(self):
@@ -764,6 +798,8 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         return
 
     def post_physics_step(self):
+        if self.save_kin_info: # this needs to happen BEFORE the next time-step observation is computed, to collect the "current time-step target"
+            self.extras['kin_dict'] = self.kin_dict
         super().post_physics_step()
         
         if flags.im_eval:
@@ -1107,10 +1143,10 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         
         return
     
-    def _reset_envs(self, env_ids):
-        super()._reset_envs(env_ids)
-        if self.collect_dataset:
-            self.obs_buf_t = self.obs_buf.cpu().numpy() # first time step update
+    # def _reset_envs(self, env_ids):
+    #     super()._reset_envs(env_ids)
+    #     if self.collect_dataset:
+    #         self.obs_buf_t = self.obs_buf.cpu().numpy() # first time step update
 
     def _reset_ref_state_init(self, env_ids):
         self._motion_start_times_offset[env_ids] = 0  # Reset the motion time offsets
@@ -1289,6 +1325,42 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         self.random_occlu_idx[:] = True
         self.random_occlu_idx[:, [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]] = False
 
+    def step(self, actions):
+        if self.dr_randomizations.get('actions', None):
+            actions = self.dr_randomizations['actions']['noise_lambda'](actions)
+        # apply actions
+        self.pre_physics_step(actions)
+
+        if self.save_kin_info: # this needs to happen after pre_physics_step to get the correctly scaled actions
+            self.update_kin_info()
+
+        # step physics and render each frame
+        self._physics_step()
+
+        # to fix!
+        if self.device == 'cpu':
+            self.gym.fetch_results(self.sim, True)
+
+        # compute observations, rewards, resets, ...
+        self.post_physics_step()
+
+
+        if self.dr_randomizations.get('observations', None):
+            self.obs_buf = self.dr_randomizations['observations']['noise_lambda'](self.obs_buf)
+
+    def update_kin_info(self):
+        root_pos = self._rigid_body_pos[..., 0, :]
+        root_rot = self._rigid_body_rot[..., 0, :]
+        self.kin_dict.update({
+            "root_pos": root_pos.clone(),
+            "root_rot": root_rot.clone(),
+            "body_pos": self._rigid_body_pos.clone(),
+            "dof_pos": self._dof_pos.clone(),
+            "ref_body_pos": self.ref_body_pos.clone(),
+            "ref_body_vel": self.ref_body_vel.clone(),
+            "ref_body_rot": self.ref_body_rot.clone(),
+            }) # current root pos + root for future aggergration
+
     def _action_to_pd_targets(self, action):
         if self._res_action:
             pd_tar = self.ref_dof_pos + self._pd_action_scale * action
@@ -1396,6 +1468,24 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
 
     def _draw_task(self):
         self._update_marker()
+        return
+
+
+class HumanoidImZ(HumanoidIm):
+    def __init__(self, cfg, sim_params, physics_engine, device_type, device_id, headless):
+        super().__init__(cfg=cfg, sim_params=sim_params, physics_engine=physics_engine, device_type=device_type, device_id=device_id, headless=headless)
+        self.initialize_z_models()
+        return
+
+    def step(self, actions):
+        self.step_z(actions)
+        return
+
+
+    def _setup_character_props(self, key_bodies):
+        super()._setup_character_props(key_bodies)
+        super()._setup_character_props_z()
+
         return
 
 

@@ -29,13 +29,15 @@
 from phc.env.tasks.humanoid import Humanoid
 from phc.env.tasks.humanoid_amp import HumanoidAMP
 from phc.env.tasks.humanoid_amp_getup import HumanoidAMPGetup
-from phc.env.tasks.humanoid_im import HumanoidIm
+from phc.env.tasks.humanoid_im import HumanoidIm, HumanoidImZ
 from phc.env.tasks.humanoid_im_getup import HumanoidImGetup
 from phc.env.tasks.humanoid_im_mcp import HumanoidImMCP
 from phc.env.tasks.humanoid_im_mcp_getup import HumanoidImMCPGetup
 from phc.env.tasks.vec_task_wrappers import VecTaskPythonWrapper
 from phc.env.tasks.humanoid_im_demo import HumanoidImDemo
 from phc.env.tasks.humanoid_im_mcp_demo import HumanoidImMCPDemo
+from phc.env.tasks.humanoid_im_distill import HumanoidImDistill
+
 
 from isaacgym import rlgpu
 
