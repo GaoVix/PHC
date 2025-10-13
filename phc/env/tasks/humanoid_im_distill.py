@@ -164,7 +164,8 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
                 self._track_bodies_id = self._full_track_bodies_id
                 temp_fut, temp_fut_drop, temp_timestep, temp_num_steps, temp_root_height_obs = self._fut_tracks, self._fut_tracks_dropout, self._traj_sample_timestep, self._num_traj_samples, self._root_height_obs
                 self._fut_tracks, self._fut_tracks_dropout, self._traj_sample_timestep, self._num_traj_samples, self._root_height_obs = self.fut_tracks_distill, self.fut_tracks_dropout_distill, 1/self.traj_sample_timestep_distill, self.num_traj_samples_distill, self.root_height_obs_distill
-                
+                print('--------------------------------')
+                print(self.obs_buf.shape)
                 if self.root_height_obs_distill != temp_root_height_obs:
                     self_obs = self.obs_buf[:, :self.get_self_obs_size()]
                     self_obs = torch.cat([self._rigid_body_pos[:, 0, 2:3], self_obs], dim = -1)
@@ -184,7 +185,9 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
                 self._track_bodies_id = temp_tracks
                 self._fut_tracks, self._fut_tracks_dropout, self._traj_sample_timestep, self._num_traj_samples, self._root_height_obs = temp_fut, temp_fut_drop, temp_timestep, temp_num_steps, temp_root_height_obs
 
-                
+                print(task_obs.shape)
+                print(self_obs.shape)
+                raise RuntimeError
                 task_obs = ((task_obs - self.running_mean.float()[self_obs_size:]) / torch.sqrt(self.running_var.float()[self_obs_size:] + 1e-05))
                 full_obs = torch.cat([self_obs, task_obs], dim = -1)
                 full_obs = torch.clamp(full_obs, min=-5.0, max=5.0)
