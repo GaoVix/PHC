@@ -166,6 +166,7 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
                 self._fut_tracks, self._fut_tracks_dropout, self._traj_sample_timestep, self._num_traj_samples, self._root_height_obs = self.fut_tracks_distill, self.fut_tracks_dropout_distill, 1/self.traj_sample_timestep_distill, self.num_traj_samples_distill, self.root_height_obs_distill
                 print('--------------------------------')
                 print(self.obs_buf.shape)
+                print(self.get_self_obs_size())
                 if self.root_height_obs_distill != temp_root_height_obs:
                     self_obs = self.obs_buf[:, :self.get_self_obs_size()]
                     self_obs = torch.cat([self._rigid_body_pos[:, 0, 2:3], self_obs], dim = -1)
