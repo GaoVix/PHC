@@ -79,10 +79,10 @@ cfg_train = None
 def parse_sim_params(cfg):
     # initialize sim
     sim_params = gymapi.SimParams()
-    # sim_params.dt = eval(cfg.sim.physx.step_dt)
-    sim_params.dt = SIM_TIMESTEP
+    sim_params.dt = eval(cfg.sim.physx.step_dt)
+    # sim_params.dt = SIM_TIMESTEP
     sim_params.num_client_threads = cfg.sim.slices
-    
+
     if cfg.sim.use_flex:
         if cfg.sim.pipeline in ["gpu"]:
             print("WARNING: Using Flex with GPU instead of PHYSX!")

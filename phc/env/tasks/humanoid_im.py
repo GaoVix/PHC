@@ -1326,6 +1326,7 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         self.random_occlu_idx[:, [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]] = False
 
     def step(self, actions):
+        raise RuntimeError
         if self.dr_randomizations.get('actions', None):
             actions = self.dr_randomizations['actions']['noise_lambda'](actions)
         # apply actions
