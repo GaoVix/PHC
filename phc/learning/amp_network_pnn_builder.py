@@ -64,13 +64,7 @@ class AMPPNNBuilder(AMPBuilder):
 
             a_out = self.actor_cnn(obs)  # This is empty
             a_out = a_out.contiguous().view(a_out.size(0), -1)
-
-            a_out = torch.ones(a_out.shape, self.num_prim).to(obs.device)
-
             a_out, a_outs = self.pnn(a_out, idx=self.training_prim)
-
-            print(a_out)
-            raise RuntimeError
 
             # a_out = a_outs[0]
             # print("debugging")  # Dubgging!!!
