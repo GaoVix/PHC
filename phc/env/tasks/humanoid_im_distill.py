@@ -213,7 +213,7 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
                     self.kin_dict['progress_buf'] = self.progress_buf.clone()
                     
             ################ GT-Action ################
-            actions = gt_action; print("using gt action") # Debugging
+            # actions = gt_action; print("using gt action") # Debugging
         # apply actions
         self.pre_physics_step(actions)
 
