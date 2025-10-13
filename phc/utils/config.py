@@ -44,7 +44,7 @@ import random
 import torch
 from phc.utils.flags import flags
 
-SIM_TIMESTEP = 1.0 / 60.0
+# SIM_TIMESTEP = 1.0 / 60.0
 
 
 def set_np_formatting():

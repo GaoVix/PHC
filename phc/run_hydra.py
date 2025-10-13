@@ -35,7 +35,7 @@ os.environ["OMP_NUM_THREADS"] = "1"
 
 sys.path.append(os.getcwd())
 
-from phc.utils.config import set_np_formatting, set_seed, SIM_TIMESTEP
+from phc.utils.config import set_np_formatting, set_seed
 from phc.utils.parse_task import parse_task
 from isaacgym import gymapi
 from isaacgym import gymutil
