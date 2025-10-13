@@ -185,7 +185,6 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
 
                 task_obs = ((task_obs - self.running_mean.float()[self_obs_size:]) / torch.sqrt(self.running_var.float()[self_obs_size:] + 1e-05))
                 full_obs = torch.cat([self_obs, task_obs], dim = -1)
-                full_obs = self.obs_buf
                 full_obs = torch.clamp(full_obs, min=-5.0, max=5.0)
                 
                 if self.distill_z_model:
