@@ -165,7 +165,6 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
                 temp_fut, temp_fut_drop, temp_timestep, temp_num_steps, temp_root_height_obs = self._fut_tracks, self._fut_tracks_dropout, self._traj_sample_timestep, self._num_traj_samples, self._root_height_obs
                 self._fut_tracks, self._fut_tracks_dropout, self._traj_sample_timestep, self._num_traj_samples, self._root_height_obs = self.fut_tracks_distill, self.fut_tracks_dropout_distill, 1/self.traj_sample_timestep_distill, self.num_traj_samples_distill, self.root_height_obs_distill
                 if self.root_height_obs_distill != temp_root_height_obs:
-                    print('AAAAAAAAAAAAAAAAA')
                     self_obs = self.obs_buf[:, :self.get_self_obs_size()]
                     self_obs = torch.cat([self._rigid_body_pos[:, 0, 2:3], self_obs], dim = -1)
                     # self_obs = self._compute_humanoid_obs() # torch.cat([self._rigid_body_pos[:, 0, 2:3], self_obs], dim = -1) - self._compute_humanoid_obs()
@@ -177,7 +176,6 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
                     
                 if temp_fut == self.fut_tracks_distill and temp_fut_drop == self.fut_tracks_dropout_distill and temp_timestep == 1/self.traj_sample_timestep_distill and temp_num_steps == self.num_traj_samples_distill\
                     and temp_root_height_obs == self.root_height_obs_distill:
-                    print('BBBBBBBBBBBBBBBBBBB')
                     task_obs = self.obs_buf[:, self.get_self_obs_size():]
                 else:
                     task_obs = self._compute_task_obs(save_buffer = False)
@@ -185,9 +183,9 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
                 self._track_bodies_id = temp_tracks
                 self._fut_tracks, self._fut_tracks_dropout, self._traj_sample_timestep, self._num_traj_samples, self._root_height_obs = temp_fut, temp_fut_drop, temp_timestep, temp_num_steps, temp_root_height_obs
 
-                raise RuntimeError
                 task_obs = ((task_obs - self.running_mean.float()[self_obs_size:]) / torch.sqrt(self.running_var.float()[self_obs_size:] + 1e-05))
                 full_obs = torch.cat([self_obs, task_obs], dim = -1)
+                full_obs = self.obs_buf
                 full_obs = torch.clamp(full_obs, min=-5.0, max=5.0)
                 
                 if self.distill_z_model:
