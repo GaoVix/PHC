@@ -293,7 +293,7 @@ class Humanoid(BaseTask):
         self.hard_negative = cfg["env"].get("hard_negative", False)  # hard negative sampling for im
         self.cycle_motion = cfg["env"].get("cycle_motion", False)  # Cycle motion to reach 300
         self.power_reward = cfg["env"].get("power_reward", False)
-        self.obs_v = cfg["env"].get("obs_v", 1)
+        self.obs_v = cfg["env"].get("obs_v", 6)
         self.amp_obs_v = cfg["env"].get("amp_obs_v", 1)
         
         
