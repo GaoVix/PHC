@@ -202,7 +202,10 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
                             weights = self.composer(full_obs)
                             gt_action = torch.sum(weights[:, :, None] * x_all, dim=1)
                         else:
+                            full_obs = torch.ones_like(full_obs).to(full_obs.device)
                             gt_action, _ = self.pnn(full_obs, idx=0)
+                            print(gt_action)
+                            raise RuntimeError
                     else:
                         gt_action = self.encoder(full_obs)
                         # x_all = torch.stack([net(full_obs) for net in self.actors], dim=1)
