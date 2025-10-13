@@ -1532,8 +1532,7 @@ class Humanoid(BaseTask):
             if self.add_action_noise:
                 noise = torch.normal(mean=0.0, std=float(self.action_noise_std), size = actions.shape, device=self.device)
                 self.actions += noise
-        print(actions)
-        raise RuntimeError
+
         if len(self.actions.shape) == 1:
             self.actions = self.actions[None, ]
         # print('--------------------------------')

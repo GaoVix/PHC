@@ -63,7 +63,6 @@ class AMPPNNBuilder(AMPBuilder):
             a_out = self.actor_cnn(obs)  # This is empty
             a_out = a_out.contiguous().view(a_out.size(0), -1)
 
-            a_out = torch.ones_like(a_out).to(a_out.device)
             a_out, a_outs = self.pnn(a_out, idx=self.training_prim)
 
             # a_out = a_outs[0]
