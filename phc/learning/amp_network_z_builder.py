@@ -49,7 +49,7 @@ class AMPZBuilder(AMPBuilder):
             flags.idx = 0
             self.debug_idxes = [0] * self.embedding_partion
             
-            if self.z_all:
+            if self.z_all:  # False
                 kwargs['input_shape'] = (self.embedding_size,)  # Task embedding size + self_obs
             else:
                 kwargs['input_shape'] = (kwargs['self_obs_size'] + self.embedding_size,)  # Task embedding size + self_obs
@@ -442,6 +442,7 @@ class AMPZBuilder(AMPBuilder):
                 if self.z_all:
                     actor_input = z_out
                 else:
+                    raise RuntimeError()
                     actor_input = torch.cat([self_obs, z_out], dim=-1)
 
                 a_out = self.actor_mlp(actor_input)
