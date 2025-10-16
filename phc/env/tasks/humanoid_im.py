@@ -133,7 +133,9 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         self.create_o3d_viewer()
         self.setup_kin_info()
         # self.save_flag=True
-        # self.motion_res_history = []
+        self.rollout1 = []
+        self.rollout2 = []
+        self.env_flags = torch.zeros(self.num_envs).to(self.device)
         # self.play_index = 0
         # self.data_coll = np.load("/mnt/Exp_HDD/dataset/test/all_motion_res_data.npz", allow_pickle=True)
          #self.init_state = np.load("/mnt/Exp_HDD/dataset/test/init_motion_res_data.npz", allow_pickle=True)
@@ -935,20 +937,6 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
             else:
                 return torch.zeros(len(env_ids), 912).to(self.device)
 
-
-        # if len(env_ids) == 1024:
-        #     print(motion_res['root_pos'])
-        #     self.motion_res_history.append(copy.deepcopy(motion_res))
-        #     if len(self.motion_res_history) == 200:
-        #         self.save_all_motion_res_to_npz()
-        #         raise RuntimeError("Finished")
-        #     print('---------------------------')
-        #     print(f'current the {len(self.motion_res_history)} motion res recorded.')
-        #     print('-------------------------')
-
-
-
-
         
         root_pos = body_pos[..., 0, :]
         root_rot = body_rot[..., 0, :]
@@ -962,6 +950,24 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         ref_rb_rot_subset = ref_rb_rot[..., self._track_bodies_id, :]
         ref_body_vel_subset = ref_body_vel[..., self._track_bodies_id, :]
         ref_body_ang_vel_subset = ref_body_ang_vel[..., self._track_bodies_id, :]
+
+        if len(env_ids) != self.num_envs:
+            print(f'{len(env_ids)} env ids reset!!!')
+            self.env_flags[env_ids] = 1
+
+        self.rollout1.append(copy.deepcopy(body_vel_subset))
+        self.rollout2.append(copy.deepcopy(ref_body_vel_subset))
+        if len(self.rollout1) == 200:
+            print('Finished Collecting!!!')
+            data1 = torch.stack(self.rollout1)
+            torch.save(data1, '/mnt/Exp_HDD/dataset/test/r1.pt')
+            data2 = torch.stack(self.rollout2)
+            torch.save(data2, '/mnt/Exp_HDD/dataset/test/r2.pt')
+            data3 = torch.stack(self.env_flags)
+            torch.save(data3, '/mnt/Exp_HDD/dataset/test/flag.pt')
+            sys.exit()
+
+
 
         if self.obs_v == 1 :
             obs = compute_imitation_observations(root_pos, root_rot, body_pos_subset, body_rot_subset, body_vel_subset, body_ang_vel_subset, ref_rb_pos_subset, ref_rb_rot_subset, ref_body_vel_subset, ref_body_ang_vel_subset, time_steps, self._has_upright_start)
