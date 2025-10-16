@@ -790,7 +790,6 @@ class AMPAgent(common_agent.CommonAgent):
 
                 ar1_prior, regu_prior = 0, 0
                 if humanoid_env.use_ar1_prior:
-                    raise RuntimeError()
                     time_zs = vae_mu.view(self.minibatch_size // self.horizon_length, self.horizon_length, -1)
                     phi = 0.99
 
