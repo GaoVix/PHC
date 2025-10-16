@@ -439,10 +439,9 @@ class AMPZBuilder(AMPBuilder):
                 # if len(self.z_acc) > 500:
                 #     import ipdb; ipdb.set_trace()
                 #     import joblib;joblib.dump(self.z_acc, "z_acc_compare_3.pkl")
-                if self.z_all:
+                if self.z_all: # False
                     actor_input = z_out
                 else:
-                    raise RuntimeError()
                     actor_input = torch.cat([self_obs, z_out], dim=-1)
 
                 a_out = self.actor_mlp(actor_input)
