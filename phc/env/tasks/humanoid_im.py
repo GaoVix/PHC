@@ -951,20 +951,20 @@ class HumanoidIm(humanoid_amp_task.HumanoidAMPTask):
         ref_body_vel_subset = ref_body_vel[..., self._track_bodies_id, :]
         ref_body_ang_vel_subset = ref_body_ang_vel[..., self._track_bodies_id, :]
 
-        if len(env_ids) != self.num_envs:
-            print(f'{len(env_ids)} env ids reset!!!')
-            self.env_flags[env_ids] = 1
-        else:
-            self.rollout1.append(copy.deepcopy(body_ang_vel_subset))
-            self.rollout2.append(copy.deepcopy(ref_body_ang_vel_subset))
-            if len(self.rollout1) == 200:
-                print('Finished Collecting!!!')
-                data1 = torch.stack(self.rollout1)
-                torch.save(data1, '/mnt/Exp_HDD/dataset/test/r1.pt')
-                data2 = torch.stack(self.rollout2)
-                torch.save(data2, '/mnt/Exp_HDD/dataset/test/r2.pt')
-                torch.save(self.env_flags, '/mnt/Exp_HDD/dataset/test/flag.pt')
-                sys.exit()
+        # if len(env_ids) != self.num_envs:
+        #     print(f'{len(env_ids)} env ids reset!!!')
+        #     self.env_flags[env_ids] = 1
+        # else:
+        #     self.rollout1.append(copy.deepcopy(body_ang_vel_subset))
+        #     self.rollout2.append(copy.deepcopy(ref_body_ang_vel_subset))
+        #     if len(self.rollout1) == 200:
+        #         print('Finished Collecting!!!')
+        #         data1 = torch.stack(self.rollout1)
+        #         torch.save(data1, '/mnt/Exp_HDD/dataset/test/r1.pt')
+        #         data2 = torch.stack(self.rollout2)
+        #         torch.save(data2, '/mnt/Exp_HDD/dataset/test/r2.pt')
+        #         torch.save(self.env_flags, '/mnt/Exp_HDD/dataset/test/flag.pt')
+        #         sys.exit()
 
 
 
