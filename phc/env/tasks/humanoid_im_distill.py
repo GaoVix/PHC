@@ -81,6 +81,7 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
             self.kin_dict.update({
                 "gt_action": torch.zeros([self.num_envs, self._num_actions]),
                 "progress_buf": self.progress_buf.clone(),
+                'ref_action': self.ref_action.clone(),
                 }) # current root pos + root for future aggergration
         return
 
