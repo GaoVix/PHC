@@ -272,6 +272,8 @@ class CommonAgent(a2c_continuous.A2CAgent):
         }
 
         with torch.no_grad():
+            print(self.model)
+            raise RuntimeError
             res_dict = self.model(input_dict)
             if self.has_central_value:
                 states = obs['states']
