@@ -73,7 +73,8 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
                 #     self.composer = self.load_moe_composer(composer_cp)
 
             self.running_mean, self.running_var = check_points[-1]['running_mean_std']['running_mean'], check_points[-1]['running_mean_std']['running_var']
-        
+
+        self.ref_action = torch.zeros((self.num_envs, self.num_actions), dtype=torch.float32).to(self.device)
 
         if self.save_kin_info:
             self.kin_dict = OrderedDict()
@@ -213,9 +214,14 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
                 if self.save_kin_info:
                     self.kin_dict['gt_action'] = gt_action.squeeze()
                     self.kin_dict['progress_buf'] = self.progress_buf.clone()
+                    self.kin_dict['ref_action'] = self.ref_action.clone()
                     
             ################ GT-Action ################
             # actions = gt_action; print("using gt action") # Debugging
+        ########## Residual Prediction #############
+        actions = actions + self.ref_action
+        self.ref_action = actions
+
         # apply actions
         self.pre_physics_step(actions)
 

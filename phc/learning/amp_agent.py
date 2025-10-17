@@ -778,6 +778,10 @@ class AMPAgent(common_agent.CommonAgent):
             kin_body_rot_geo_loss, kin_vel_loss_l2 = 0.0, 0.0
             if humanoid_env.z_type == "vae":
                 pred_action, pred_action_sigma, extra_dict = self.model.a2c_network.eval_actor(batch_dict, return_extra = True)
+
+                ############ Residual Prediction ###################
+                pred_action = pred_action + kin_dict['ref_action']
+
                 # kin_body_loss = (pred_action - gt_action).pow(2).mean() * 10  ## MSE
                 kin_action_loss = torch.norm(pred_action - gt_action, dim=-1).mean()  ## RMSE
 
