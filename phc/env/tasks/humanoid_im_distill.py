@@ -221,7 +221,7 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
             # actions = gt_action; print("using gt action") # Debugging
         ########## Residual Prediction #############
         actions = actions + self.ref_action
-        self.ref_action = actions
+        self.ref_action = gt_action.squeeze()
 
         # apply actions
         self.pre_physics_step(actions)
