@@ -781,7 +781,11 @@ class AMPAgent(common_agent.CommonAgent):
 
                 ############ Residual Prediction ###################
                 pred_action = pred_action + kin_dict['ref_action']
-
+                print('pred---------------------')
+                print(pred_action)
+                print('gt---------------------')
+                print(gt_action)
+                # pred_action = torch.clip(pred_action, -10, 10).to(self.device)
                 # kin_body_loss = (pred_action - gt_action).pow(2).mean() * 10  ## MSE
                 kin_action_loss = torch.norm(pred_action - gt_action, dim=-1).mean()  ## RMSE
 
