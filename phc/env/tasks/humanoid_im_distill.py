@@ -221,6 +221,7 @@ class HumanoidImDistill(humanoid_im.HumanoidIm):
             # actions = gt_action; print("using gt action") # Debugging
         ########## Residual Prediction #############
         actions = actions + self.ref_action
+        actions = torch.clip(actions, -10, 10).to(self.device)
         self.ref_action = actions.clone()
 
         # apply actions

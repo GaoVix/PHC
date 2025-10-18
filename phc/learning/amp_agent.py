@@ -823,9 +823,9 @@ class AMPAgent(common_agent.CommonAgent):
                 info_dict["kin_action_loss"] = kin_action_loss
                 info_dict["kin_KLD"] = KLD
 
-                if KLD > 100:
-                    import ipdb; ipdb.set_trace()
-                    print("KLD is too large, clipping to 10")
+                # if KLD > 100:
+                #     import ipdb; ipdb.set_trace()
+                #     print("KLD is too large, clipping to 10")
 
                 ######### KLD annealing #######
                 if humanoid_env.kld_anneal:
